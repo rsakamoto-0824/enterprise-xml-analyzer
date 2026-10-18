@@ -1,0 +1,18 @@
+appId: local.Enterprise-XML-Analyzer
+productName: Enterprise XML Analyzer
+directories:
+  output: release/electron-dist
+files:
+  - dist/**/*
+  - out/**/*
+  - build/**/*
+  - release/electron/main.cjs
+  - release/electron/preload.cjs
+extraMetadata:
+  main: release/electron/main.cjs
+win:
+  target:
+    - nsis
+mac:
+  target:
+    - dmg

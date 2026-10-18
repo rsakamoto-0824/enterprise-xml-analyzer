@@ -1,0 +1,39 @@
+{
+  "date": "2026-10-18T05:41:43.277Z",
+  "browser": "155.0.4283.62",
+  "bytesPerFile": 104951657,
+  "pairParseMs": 52384.1295,
+  "compareMs": 327.9737920000043,
+  "comparison": {
+    "comparisonId": "9e205f99-8ae7-4a8f-8756-9b31e6242218",
+    "a": "39570db0-d264-4fe8-ba91-f1be59e93e1b",
+    "b": "23ac16ec-35dd-4525-b3e8-5eef5b7ca0ca",
+    "options": {
+      "mode": "full",
+      "keyAttribute": "id",
+      "whitespace": "preserve",
+      "comments": true,
+      "processingInstructions": true,
+      "ignoreOrder": false,
+      "verifyHashes": false
+    },
+    "status": "COMPLETED",
+    "counts": {
+      "ADDED": 0,
+      "REMOVED": 0,
+      "MODIFIED": 1,
+      "MOVED": 0,
+      "UNCHANGED": 52461,
+      "AMBIGUOUS": 0
+    },
+    "rows": 363,
+    "durationMs": 201.60000002384186
+  },
+  "storage": {
+    "quota": 10983723008,
+    "usage": 246304768,
+    "usageDetails": {
+      "indexedDB": 246304768
+    }
+  }
+}

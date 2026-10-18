@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="XML解析アプリのIIS導入と利用の操作手順書。">
+  <title>Enterprise XML Analyzer操作手順書</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="procedure-guide.css">
+  <script src="procedure-guide.js" defer></script>
+</head>
+<body id="top">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+
+  <button
+    id="toc-toggle"
+    class="toc-toggle"
+    type="button"
+    aria-controls="sidebar"
+    aria-expanded="false"
+  >
+    <span aria-hidden="true">☰</span> 目次
+  </button>
+
+  <aside id="sidebar" class="sidebar" aria-label="目次">
+    <div class="sidebar-header">
+      <p class="eyebrow">Internal Procedure</p>
+      <p class="sidebar-title">Enterprise XML Analyzer</p>
+      <p class="sidebar-subtitle">操作手順書</p>
+    </div>
+    <nav>
+      <ol class="toc-list">
+        <li><a href="#overview">1. 目的と対象</a></li>
+        <li><a href="#prerequisites">2. 作業前の確認</a></li>
+        <li><a href="#workflow">3. 全体の流れ</a></li>
+        <li><a href="#procedure">4. 操作手順</a></li>
+        <li><a href="#verification">5. 完了確認</a></li>
+        <li><a href="#troubleshooting">6. 困ったとき</a></li>
+      </ol>
+    </nav>
+    <div class="sidebar-footer">
+      <span class="status-dot" aria-hidden="true"></span>
+      社内利用
+    </div>
+  </aside>
+  <div id="sidebar-overlay" class="sidebar-overlay" aria-hidden="true"></div>
+
+  <main id="main-content" class="main-content">
+    <header class="hero">
+      <div class="hero-content">
+        <p class="eyebrow">Operating Guide · Internal Use</p>
+        <h1>Enterprise XML Analyzer<br><span>操作手順書</span></h1>
+        <p class="hero-lead">
+          この手順書では、XML解析アプリの導入・更新・復旧と項目抽出を安全かつ確実に完了するための操作を説明します。
+        </p>
+        <div class="hero-badges" aria-label="文書情報">
+          <span>対象: IIS管理者・XML利用者</span>
+          <span>配信方式: 社内IIS / HTTPS</span>
+          <span>更新日: 2026/10/18</span>
+        </div>
+      </div>
+    </header>
+
+    <section id="overview" class="content-section">
+      <div class="section-heading">
+        <span class="section-number">01</span>
+        <div>
+          <p class="section-kicker">Overview</p>
+          <h2>目的と対象</h2>
+        </div>
+      </div>
+<p>XMLの構造表示・比較・必要項目のExcel出力を行います。IISは静的ファイルを配信し、XMLの内容は利用者のPC内で処理します。</p><p>対象はWindows Server 2019以降のIIS 10とWindows版Edgeです。サーバーにNode.js・Python・DBは不要です。Windows/IIS実機の受入検証は導入担当者が実施してください。</p>
+</section>
+
+    <section id="prerequisites" class="content-section">
+      <div class="section-heading">
+        <span class="section-number">02</span>
+        <div>
+          <p class="section-kicker">Prerequisites</p>
+          <h2>作業前の確認</h2>
+        </div>
+      </div>
+<ul class="check-list"><li>配布ZIPを管理用フォルダへ展開し、wwwrootとdeploymentを確認する。</li><li>専用の公開フォルダ、HTTPS証明書、利用者の認証・アクセス権をIIS管理者が用意する。</li><li>更新時は利用者に作業の保存を依頼し、公開先の外にバックアップを置く。</li><li>会社の作業でCodex・Claude Codeは不要。PowerShellとIISマネージャーで導入する。</li></ul>
+</section>
+
+    <section id="workflow" class="content-section">
+      <div class="section-heading">
+        <span class="section-number">03</span>
+        <div>
+          <p class="section-kicker">Workflow</p>
+          <h2>全体の流れ</h2>
+        </div>
+      </div>
+<div class="workflow"><div class="workflow-step"><span>1</span><strong>配布物を確認</strong><small>ハッシュと配置先</small></div><div class="workflow-arrow">→</div><div class="workflow-step"><span>2</span><strong>DryRun</strong><small>書き込み前の確認</small></div><div class="workflow-arrow">→</div><div class="workflow-step"><span>3</span><strong>配備</strong><small>バックアップとコピー</small></div><div class="workflow-arrow">→</div><div class="workflow-step"><span>4</span><strong>検証</strong><small>EdgeとExcelで確認</small></div></div>
+</section>
+
+    <section id="procedure" class="content-section">
+      <div class="section-heading">
+        <span class="section-number">04</span>
+        <div>
+          <p class="section-kicker">Procedure</p>
+          <h2>操作手順</h2>
+        </div>
+      </div>
+<h3>開発端末でビルド</h3><pre><code>npm ci
+npm test
+npm run build</code></pre><p>artifacts/enterprise-xml-analyzer-iis.zipを社内サーバーへ移します。インターネット接続は開発時の依存取得にのみ必要です。</p><h3>IISへ初回配備・更新</h3><pre><code>cd C:\Deploy\XmlAnalyzer\deployment
+.\deploy.ps1 -Source ..\wwwroot -Destination C:\inetpub\xmlviewer -BackupRoot C:\Deploy\XmlAnalyzerBackups -DryRun
+.\deploy.ps1 -Source ..\wwwroot -Destination C:\inetpub\xmlviewer -BackupRoot C:\Deploy\XmlAnalyzerBackups
+.\verify-deployment.ps1 -Url https://internal-server/xmlviewer/</code></pre><p>IISでサイト直下または仮想ディレクトリ/xmlviewer/に公開先を割り当てます。URL末尾に/を付けます。公開するのはwwwrootの中身だけです。IIS全体の再起動は行いません。</p><h3>XMLを利用</h3><ol class="numbered-steps"><li><div><strong>XML読込</strong><p>ファイルをドロップ、または選択します。複数ファイルは16件まで同時に選択できます。</p></div></li><li><div><strong>構造を選択</strong><p>構造ビューで繰り返し要素を選び、「この要素を出力の1行にする」を押します。</p></div></li><li><div><strong>抽出して保存</strong><p>出力列・型・繰り返しを指定し、100行のプレビュー後にXLSXまたはCSVを保存します。</p></div></li><li><div><strong>比較</strong><p>XML比較でA/B・モード・キー属性を選択します。曖昧な対応は紫のラベルで表示します。</p></div></li></ol><h3>直前の版へ復旧</h3><pre><code>.\rollback.ps1 -Backup C:\Deploy\XmlAnalyzerBackups\20261018-150000-000 -Destination C:\inetpub\xmlviewer -SafetyBackupRoot C:\Deploy\RollbackSafety -DryRun</code></pre><p>バックアップ時刻は実際のフォルダ名に置換します。確認後は-DryRunを外して実行し、verify-deployment.ps1を再実行します。</p>
+</section>
+
+    <section id="verification" class="content-section">
+      <div class="section-heading">
+        <span class="section-number">05</span>
+        <div>
+          <p class="section-kicker">Verification</p>
+          <h2>完了確認</h2>
+        </div>
+      </div>
+<ul class="check-list"><li>HTTPSのURLが開き、認証対象者だけが利用できる。</li><li>XML読込、ツリー展開、検索、グラフ、比較、Excel保存が動く。</li><li>開発者ツールでXML送信・外部ホストへの通信が発生しない。</li><li>Windows版Excelで修復警告なしに開け、行数・先頭ゼロ・文字列・日付を確認できる。</li><li>終了前に設定画面から作業データを削除できる。</li><li>100MB合成XML、125%/150%の表示、UNCの手動ファイル選択を確認する。</li></ul>
+</section>
+
+    <section id="troubleshooting" class="content-section">
+      <div class="section-heading">
+        <span class="section-number">06</span>
+        <div>
+          <p class="section-kicker">Troubleshooting</p>
+          <h2>困ったとき</h2>
+        </div>
+      </div>
+<div class="faq-list"><details><summary>IISで500.19になる</summary><div><p>web.configの設定ロック、機能の未導入、親サイトの設定を確認します。設定を一括解除せず、IIS管理者へ依頼してください。</p></div></details><details><summary>Excel出力の上限に達した</summary><div><p>XLSXは5万行・50万セル・1600万文字までです。抽出範囲を絞るか、HTTPSのEdgeでCSV逐次保存を使用してください。</p></div></details><details><summary>解析が途中で停止する</summary><div><p>構文エラー、UTF-8/UTF-16以外、DTD、深さ256超過、単一トークン1Mi文字超過、ストレージ不足を確認します。不完全な解析結果は削除されます。</p></div></details><details><summary>別タブで使用中と表示される</summary><div><p>同じアプリを開いているタブを閉じてから再読込してください。同一ブラウザ内の同時タブによる削除競合を防いでいます。</p></div></details></div><p>詳しい制限と実測結果は同梱docsフォルダのlimitations.md、test-report.md、performance-report.mdを確認してください。</p>
+</section>
+
+    <footer class="page-footer">
+      <p>XML Analyzer 導入・利用手順 · 社内運用向け</p>
+      <p>更新日: 2026/10/18 · 版: 1.0</p>
+    </footer>
+  </main>
+
+  <button id="back-to-top" class="back-to-top" type="button" aria-label="ページ上部へ戻る">
+    <span aria-hidden="true">↑</span>
+    トップへ戻る
+  </button>
+</body>
+</html>

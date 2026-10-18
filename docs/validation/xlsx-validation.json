@@ -1,0 +1,82 @@
+[
+  {
+    "file": "differences.xlsx",
+    "sheets": [
+      {
+        "name": "XML差分",
+        "rows": 2,
+        "columns": 11,
+        "errors": [],
+        "formulas": [],
+        "filter": "A1:K2",
+        "freeze": "A2",
+        "values": [
+          [
+            "DiffType",
+            "ElementPath",
+            "ElementName",
+            "AttributeName",
+            "OldValue",
+            "NewValue",
+            "SourceFileA",
+            "SourceFileB",
+            "Confidence",
+            "Details",
+            "CoveredNodes"
+          ],
+          [
+            "MODIFIED",
+            "/Root/Product/Name/#text",
+            "#text",
+            "",
+            "[\"\",\"#text\",\"text\",[],\"<img src=x onerror=alert(1)>\"]",
+            "[\"\",\"#text\",\"text\",[],\"new\"]",
+            "a.xml",
+            "b.xml",
+            "unique",
+            "対応ノードの直接値を比較",
+            1
+          ]
+        ]
+      }
+    ],
+    "externalLinks": 0,
+    "vba": false
+  },
+  {
+    "file": "extracted.xlsx",
+    "sheets": [
+      {
+        "name": "抽出結果",
+        "rows": 3,
+        "columns": 4,
+        "errors": [],
+        "formulas": [],
+        "filter": "A1:D3",
+        "freeze": "A2",
+        "values": [
+          [
+            "SourceFile",
+            "id",
+            "Name",
+            "Price"
+          ],
+          [
+            "日本語 製品.xml",
+            "001",
+            "りんご",
+            "100"
+          ],
+          [
+            "日本語 製品.xml",
+            "002",
+            "みかん",
+            "200"
+          ]
+        ]
+      }
+    ],
+    "externalLinks": 0,
+    "vba": false
+  }
+]

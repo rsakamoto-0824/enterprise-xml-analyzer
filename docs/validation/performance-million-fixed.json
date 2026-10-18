@@ -1,0 +1,29 @@
+{
+  "date": "2026-10-18T11:24:51.304Z",
+  "contextMode": "persistent isolated profile",
+  "platform": "darwin",
+  "arch": "arm64",
+  "cpu": "Apple M1",
+  "ramBytes": 8589934592,
+  "browser": "155.0.4283.62",
+  "results": [
+    {
+      "scale": "million",
+      "bytes": 7015013,
+      "elements": 1001001,
+      "nodes": 1001001,
+      "wallMs": 405491.027041,
+      "parseMs": 21327,
+      "indexMs": 383752,
+      "graphMs": 1323.3535409999895,
+      "searchMs": 8223.512667000003,
+      "searchHits": 1000,
+      "identityCompareMs": null,
+      "xlsxMs": null,
+      "mainThreadPeakHeapBytes": 3650960,
+      "indexedDbUsageBytes": 385654041,
+      "quotaBytes": 11123072281,
+      "cleanupMs": 204.3263750000042
+    }
+  ]
+}

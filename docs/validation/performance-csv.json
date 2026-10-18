@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-18T11:25:14.011Z",
+  "rows": 10500,
+  "bytes": 42282916,
+  "durationMs": 5919.966334000001,
+  "method": "File System Access API stream backed by OPFS; native save dialog replaced in test"
+}

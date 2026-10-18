@@ -1,0 +1,61 @@
+{
+  "date": "2026-10-18T05:35:13.371Z",
+  "platform": "darwin",
+  "arch": "arm64",
+  "cpu": "Apple M1",
+  "ramBytes": 8589934592,
+  "browser": "155.0.4283.62",
+  "results": [
+    {
+      "scale": "1",
+      "bytes": 1206349,
+      "elements": 304,
+      "nodes": 604,
+      "wallMs": 571.0080839999996,
+      "parseMs": 211.60000026226044,
+      "indexMs": 210.19999980926514,
+      "graphMs": 209.18920799999978,
+      "searchMs": 26.9975000000004,
+      "searchHits": 3,
+      "identityCompareMs": null,
+      "xlsxMs": null,
+      "mainThreadPeakHeapBytes": 3074427,
+      "indexedDbUsageBytes": 1499136,
+      "quotaBytes": 10738917376
+    },
+    {
+      "scale": "10",
+      "bytes": 10857054,
+      "elements": 2728,
+      "nodes": 5428,
+      "wallMs": 2333.5002910000003,
+      "parseMs": 1046.2999997138977,
+      "indexMs": 1237.0000003576279,
+      "graphMs": 109.6748749999997,
+      "searchMs": 81.18424999999934,
+      "searchHits": 27,
+      "identityCompareMs": null,
+      "xlsxMs": null,
+      "mainThreadPeakHeapBytes": 7699335,
+      "indexedDbUsageBytes": 12812288,
+      "quotaBytes": 10750230528
+    },
+    {
+      "scale": "100",
+      "bytes": 104951657,
+      "elements": 26362,
+      "nodes": 52462,
+      "wallMs": 23134.242,
+      "parseMs": 10137.099999904633,
+      "indexMs": 12775.600000143051,
+      "graphMs": 620.1696669999983,
+      "searchMs": 689.5680829999983,
+      "searchHits": 261,
+      "identityCompareMs": 28.7653749999954,
+      "xlsxMs": 7032.016374999999,
+      "mainThreadPeakHeapBytes": 16035448,
+      "indexedDbUsageBytes": 123629568,
+      "quotaBytes": 10861047808
+    }
+  ]
+}

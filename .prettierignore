@@ -1,0 +1,7 @@
+node_modules
+dist
+.generated
+artifacts
+output
+test-results
+package-lock.json
