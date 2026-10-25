@@ -209,6 +209,15 @@ class EngineTests(unittest.TestCase):
                                ("../$name", ["r"]), ("$level:0", ["r"]), ("$namespace", ["urn:p"])):
             self.assertEqual(values_for(self.store, n, path, "a.xml", Task()), expected)
 
+    def test_legacy_namespace_paths_preserve_encode_uri_component_characters(self):
+        f = self.parse('<r xmlns:p="urn:a(b)!*\'c"><p:n p:id="001"/></r>')
+        path = "/r/{urn%3Aa(b)!*'c}n"
+        template = self.template(path, Column("@{urn%3Aa(b)!*'c}id", "id"))
+        legacy = json.loads(template.to_json())
+        legacy["version"] = 1
+        restored = Template.from_json(json.dumps(legacy))
+        self.assertEqual(list(extract(self.store, [f["id"]], restored))[0].cells[-1], "001")
+
     def test_repeat_join_first_rows_and_child_sheets(self):
         f = self.parse('<r><n id="001"><v>A</v><v>B</v><w>1</w><w>2</w></n></r>')
         for repeat, count, expected in (("join", 1, "A | B"), ("first", 1, "A"), ("rows", 2, "A")):

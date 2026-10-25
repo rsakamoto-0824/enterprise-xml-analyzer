@@ -15,7 +15,8 @@ NS_SEPARATOR = "\x1f"
 
 
 def expanded(uri, local):
-    return "{" + quote(uri, safe="") + "}" + local if uri else local
+    # Match the Web version's encodeURIComponent so existing namespace paths remain usable.
+    return "{" + quote(uri, safe="!~*'()") + "}" + local if uri else local
 
 
 def split_name(name):
