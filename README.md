@@ -1,64 +1,47 @@
-# Enterprise XML Analyzer
+# Enterprise XML Analyzer — Pythonスタンドアローン版
 
-XMLをブラウザ内で分割解析し、構造表示・比較・項目抽出・Excel/CSV出力を行う日本語の静的Webアプリです。IISには配信ファイルだけを置き、XMLはアップロードしません。現在の制約と確認範囲は [既知の制限](docs/limitations.md) を参照してください。
+Windowsの実行環境の違いに対応するため、主なアプリをPython 3.14.6のデスクトップ版へ作り直しました。XMLの階層表示・グラフ・比較・項目抽出・XLSX/CSV出力を、PC内で実行します。
 
-## 開発・ビルド
+**実行時の追加pipパッケージは0件です。** Windows配布版はPython 3.14.6本体とTcl/Tk等を同梱し、ブラウザ、Node.js、IIS、インターネット接続を必要としません。
 
-Node.js 24 LTSとnpmを使用します。開発時に依存パッケージを取得し、成果物にはすべてを同梱します。実運用のサーバー・利用者PCにNode.jsは不要です。
+## Windowsで起動
 
-```sh
-npm ci
-npm test
-npm run build
-npm run dev
+Windows x64用の `enterprise-xml-analyzer-windows-x64-python3146.zip` をすべて展開し、`EnterpriseXmlAnalyzer/EnterpriseXmlAnalyzer.exe` を起動します。`_internal` フォルダを削除・移動しないでください。
+
+ソース版は、CPython **3.14.6完全版（Tcl/Tk付き）** で起動します。別のバージョンでは起動を止めます。
+
+```bat
+py -3.14 run.py
 ```
 
-ビルド結果は `dist/`、配布一式は `artifacts/enterprise-xml-analyzer-iis/` と同名ZIPです。WindowsでのZIP作成には `Compress-Archive -Path artifacts/enterprise-xml-analyzer-iis/* -DestinationPath artifacts/enterprise-xml-analyzer-iis.zip` を使用できます。環境変数・秘密情報の設定はありません。`npm run dev` は開発専用です。
+または `start_windows.cmd` をダブルクリックします。Pythonのembeddableパッケージは通常Tkinterを含まないためソース版の実行には使いません。詳しい手順は [Windows操作・配布ガイド](docs/python-windows.md) を参照してください。
 
 ## 使い方
 
-1. 「XML読込」で1～16ファイルを選択、またはドロップします。
-2. 「構造ビュー」で要素を選択します。属性・テキスト・パスを右ペインで確認できます。
-3. 「この要素を出力の1行にする」で繰り返し要素の列候補を作成します。
-4. 出力する列のチェック、型、列名、繰り返し方法を指定し、プレビュー後に保存します。
-5. 2つ以上のXMLがある場合、「XML比較」でA/Bを選択します。一意キーがない繰り返し要素は曖昧として表示する場合があります。
+[スクリーンショット付きHTML操作手順書](docs/python-user-guide/procedure-guide.html) を用意しています。Windows配布版では `UserGuide/procedure-guide.html` をブラウザで開いてください。練習用XMLも同梱しています。HTML単体版と手順書ZIPは `python scripts/package_user_guide.py` で作成できます。
 
-名前空間を持つパスは `{URIをパーセントエンコード}localName` で識別します。画面で選択したパスを使用してください。一般的なXPathの式・述語・関数全般は実装していません。
+1. 「XML読込」でXMLを選択、またはウインドウへドロップします。
+2. 「構造ビュー」で繰り返し要素を選び、「この要素を出力の1行にする」を押します。
+3. 「Excel出力」で列を選び、型・繰り返し・条件を設定します。列の編集後は「列へ反映」で確定します。
+4. プレビュー後にXLSXまたはCSVを保存します。複数XMLの統合・別シート・別ファイルにも対応します。
+5. 「XML比較」でA/Bを選び、構造・値・完全の比較を実行できます。
 
-## IIS配布
+通常終了時は一時作業データを削除します。残す場合は「設定」から作業ファイルを明示的に保存します。詳細な制限とデータの扱いは [設計・安全制限](docs/python-design.md) に記載しています。
 
-1. ZIPを管理用フォルダで展開します。
-2. 専用の空フォルダを公開先に作成し、IISでHTTPSと認証・アクセス制御を設定します。
-3. `deployment/deploy.ps1` に `wwwroot`、公開先、公開外のバックアップ先を指定します。まず `-DryRun` で確認します。
-4. `deployment/verify-deployment.ps1` を実行し、Edgeで受入テストします。
+## 検証・ビルド（開発担当者）
 
-サイト直下と `/xmlviewer/` の両方に対応します。URLは末尾 `/` を付けます。配布対象は **wwwrootの内容だけ** であり、ソースや管理用スクリプトを公開しません。詳細: [IIS導入・更新・復旧](docs/IIS-deployment.md)、[HTML操作手順](release/build-and-publish-steps.html)。
-
-## テスト
-
-```sh
-npm test
-npm run build
-npm run test:e2e
-npm run verify:package
-npm run test:performance
+```bat
+py -3.14 -m unittest discover -s tests_python -v
+py -3.14 run.py --self-test output\python-selftest.json
+py -3.14 build_windows.py
 ```
 
-E2Eはインストール済みのMicrosoft Edgeを既定で使用します。Chromeは `BROWSER_CHANNEL=chrome npm run test:e2e`（PowerShellは `$env:BROWSER_CHANNEL='chrome'`）で選べます。実測結果は [性能報告](docs/performance-report.md)、対象と未検証項目は [テスト報告](docs/test-report.md) を参照してください。
+WindowsビルドだけPyInstaller 6.22.3等を使用します。ビルド依存は `requirements-build-windows.txt` でバージョン・ハッシュを固定しています。利用者PCでビルドする必要はありません。
 
-## 主な構成と依存
+成果物は `artifacts/enterprise-xml-analyzer-windows-x64-python3146.zip`、ソース配布は `python scripts/package_python.py` で作成します。Windows自動ビルドは `.github/workflows/python-windows.yml` です。[検証結果](docs/python-test-report.md) を確認してください。
 
-- `src/parser` / `workers`: Saxes 6.0.0による分割解析、Worker処理
-- `src/storage`: idb 8.0.4を使用したIndexedDB保存
-- `src/diff`: SHA-256（@noble/hashes 2.4.0）と親スコープ内のノード照合
-- `src/export`: ExcelJS 4.4.0と逐次CSV生成
-- `src/components` / `visualization`: 日本語UI、仮想リスト、D3 7.9.0グラフ
-- `deployment`: IIS設定とPowerShell配布・復旧・確認スクリプト
-- `tests`: Vitest 5.0.5 / Playwright 1.64.1
-- Vite 8.3.4 / TypeScript 7.0.2。直接依存と修正版uuid 11.1.1を固定し、lockfileで間接依存も固定。
+## 構成
 
-XLSX生成は全ブックをメモリに持つため、5万行・50万セル・1600万文字で停止します。大量データにはHTTPSのEdgeでCSV逐次保存を使用してください。XML読み込みの100MB対応と、無制限のExcel出力は別です。
+`run.py` が起動入口、`xml_analyzer/` が画面・解析・SQLite・比較・抽出・逐次出力、`tests_python/` が機能とGUIのテストです。実行環境の固定は `.python-version` と `pyproject.toml` の両方に記載しています。環境変数・APIキーの設定は不要です。
 
-Electronは社内共通ルールに基づく補助構成です。IISが主たる配布方式です。[Electron手順](docs/electron.md)を参照してください。
-
-主な残課題は [issues.md](issues.md) で管理しています。Windows実機の受入確認が終わるまでは、合成データでの評価用として扱ってください。
+旧Web版の `src/`、npm設定、IIS/Electron資材は移行履歴として保持しています。Python版の実行・配布には含めません。[旧版README](docs/legacy-web-readme.md) と旧版の性能報告を、Python版の動作保証として使わないでください。

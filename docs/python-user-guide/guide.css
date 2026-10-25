@@ -1,0 +1,25 @@
+:root { --content-max-width-px: 1480px; }
+.content-section { scroll-margin-top: 12px; }
+.small-note { color: #52627a; font-size: 12px; margin-top: 14px; }
+.screenshot { margin: 20px 0 28px; padding: 9px; border: 1px solid #cad6e3; border-radius: 4px; background: #f5f8fb; }
+.shot-zoom { display: block; width: 100%; border: 0; padding: 0; background: transparent; cursor: zoom-in; }
+.screenshot img { display: block; width: 100%; height: auto; border: 1px solid #dae1e9; }
+.screenshot figcaption { font-size: 12px; color: #354c69; padding: 9px 4px 2px; }
+.shot-zoom:focus-visible, .download-link:focus-visible { outline: 3px solid #245f9b; outline-offset: 3px; }
+.table-wrap { overflow-x: auto; margin: 14px 0 20px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+caption { text-align: left; font-weight: 700; margin-bottom: 8px; }
+th, td { padding: 10px 12px; border: 1px solid #d4deea; text-align: left; vertical-align: top; }
+th { background: #edf3f9; color: #18365e; }
+tbody tr:nth-child(even) { background: #f8fafc; }
+.download-row { display: flex; gap: 12px; flex-wrap: wrap; margin: 15px 0; }
+.download-link { display: inline-block; color: white; background: #245f9b; border-radius: 3px; text-decoration: none; padding: 9px 16px; font-weight: 700; }
+.download-link:hover { background: #18365e; color: white; }
+#image-viewer { max-width: 96vw; max-height: 94vh; padding: 14px; border: 1px solid #7790ad; border-radius: 5px; overflow: auto; }
+#image-viewer::backdrop { background: rgba(8,20,38,.78); }
+.viewer-bar { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 12px; }
+.viewer-bar p { margin: 0; font-weight: 700; }
+#close-viewer { padding: 7px 14px; cursor: pointer; border: 1px solid #18365e; background: #18365e; color: white; border-radius: 3px; }
+#viewer-image { display: block; width: auto; max-width: none; height: auto; }
+.viewer-note { font-size: 12px; color: #52627a; margin-top: 10px; }
+@media print { .screenshot { break-inside: avoid; } .shot-zoom { cursor: default; } .download-link { color: #18365e; background: none; border: 1px solid #18365e; } dialog { display: none; } }

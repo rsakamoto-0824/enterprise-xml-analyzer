@@ -1,0 +1,69 @@
+# Python版をWindowsで使う
+
+スクリーンショット付きの操作手順は、配布フォルダの `UserGuide/procedure-guide.html` をブラウザで開いてください。リポジトリでは [HTML操作手順書](python-user-guide/procedure-guide.html) にあります。
+
+対象はWindows 11 x64およびWindows Server 2019以降のデスクトップ環境です。実測・動作確認したOSはpython-test-report.mdに記録します。Windows Server Core、32bit、Windows ARM64のネイティブ実行は対象外です。
+
+## Windows配布版（推奨）
+
+1. `enterprise-xml-analyzer-windows-x64-python3146.zip` を利用者のローカルフォルダへコピーします。
+2. ZIPをすべて展開します。`EnterpriseXmlAnalyzer` フォルダの `EnterpriseXmlAnalyzer.exe` と `_internal` をセットで保管します。
+3. `EnterpriseXmlAnalyzer.exe` をダブルクリックします。Pythonのインストール・pip・Node.js・ブラウザ・IISは不要です。Python 3.14.6、Tcl/Tk等の実行資材を同梱します。
+4. XMLを選択、またはウインドウにドロップします。合計16ファイルまで保持できます。
+5. 「構造ビュー」で繰り返し要素を選び、「この要素を出力の1行にする」を押します。
+6. 「Excel出力」で対象XML、出力列、型、繰り返しを指定し、100行のプレビュー後に保存します。保存ファイル名はWindowsの保存ダイアログで指定します。
+
+アプリは管理者権限を要求しません。会社の実行許可・署名・セキュリティ製品の方針には従ってください。実行が組織ポリシーで禁止された場合は管理担当者へ配布物とハッシュを提示してください。保護を解除する手順は設けていません。EXEは開発用の未署名ビルドです。
+
+共有上のXMLは通常のファイル選択から `\\server\share\folder` を手動指定します。到達性・認証・権限は利用者のWindows設定に依存します。長いパスはOSの長いパス設定・共有側の制限にも依存します。EXEはローカルへ展開して起動する運用を標準とします。
+
+## Python導入済みのPCでソース版を使う
+
+必要な環境は **CPython 3.14.6（通常のGILあり・Tcl/Tk付き完全版）** です。実行時の追加pipパッケージは0件です。Pythonのembeddableパッケージは通常Tcl/Tkを含まないため、この起動方法には使いません。
+
+```bat
+py -3.14 -c "import sys; print(sys.version); assert sys.version_info[:3] == (3,14,6)"
+py -3.14 -m tkinter
+py -3.14 run.py
+```
+
+または同梱の `start_windows.cmd` をダブルクリックします。別の3.14.xが選択された場合は起動を止めます。Python本体の絶対パスを使って `C:\...\Python314\python.exe run.py` と指定する方法もあります。環境変数やレジストリを書き換える必要はありません。
+
+## 操作
+
+- XML読込: ファイル一覧、削除、文字コード・要素数・解析秒。
+- 構造ビュー: 子を250件ずつ取得、展開・折りたたみ、詳細、Namespace、属性、XML断片、検索とジャンプ。
+- グラフ: 最大500ノード・相対深さ4、縦横、パン、ズーム、開閉、SVG保存。Windowsでは表示中キャンバスのPNGも保存できます。
+- XML比較: A/B、構造・値・完全、キー属性、空白・コメント・PI・順序、厳密照合、6分類、左右共通行のスクロール、1000件ずつ表示、左右ジャンプ、左右グラフ、差分XLSX。
+- Excel出力: 列のON/OFF・編集・上下移動、文字列/数値/日付/真偽値、親とメタ情報、階層列、結合/最初/複数行/別シート、条件AND/OR、シート分割、列幅、固定行、SourceFile、複数XML統合/別シート/別ファイル。
+- 設定: 作業ファイルの保存・復元、全データ削除、技術ログ。
+
+列の型は `string=文字列 / number=数値 / date=日付 / boolean=真偽値`、繰り返しは `join=結合 / first=最初 / rows=複数行 / sheet=別シート`、欠損は `blank=空欄 / error=停止` です。「列へ反映」を押して編集内容を確定してください。出力のON/OFFは選択行に対して切り替えます。
+
+検索・抽出パスは旧版と同じURIをパーセントエンコードした `{URI}localName` 形式を使います。XPath全体ではなく、相対パス・`@属性`・`../親`・`text()`・`*` とメタ項目に対応します。旧Web版のversion:1設定JSONは読込時にversion:2へ変換します。
+
+条件は `equals=完全一致 / contains=部分一致 / range=数値範囲 / empty=空欄 / exists=存在` です。数値範囲では2つの入力欄に下限・上限を入力します。CSVの「XMLごとに別シート」は1ファイルへ統合し、繰り返しの別シート指定は拒否します。
+
+階層列は「階層列を追加」で0～31を自動追加できます。それ以上は `$level:32` のように列の相対パスを指定します。「ノード単位」「階層を列展開」は全文書ノードを対象とし、後者も追加した階層列を使って出力します。
+
+## 保存と中断
+
+解析値は利用者の一時フォルダの専用SQLiteへ保存し、通常終了時に削除します。XMLをネットワークへ送信しません。中断すると処理中の不完全な解析結果・比較結果を削除します。既に完了した別ファイルは残します。保存処理は一時ファイルへ生成し、成功時にだけ選択した保存先へ置換します。
+
+「作業ファイルを保存」で作った `.xmlwork` は解析したXML値を含むため、元XMLと同じ扱いにしてください。元XMLの絶対パスは保存しません。JSON出力設定はXML本体を含みませんが、列名・パス・条件値を含みます。
+
+OS異常終了時の完全削除は保証できません。一時フォルダ `enterprise-xml-python-*` が残る場合は、アプリの全ウインドウを終了したうえで、利用者または管理者が内容を確認して削除します。アプリは他プロセスの作業を自動削除しません。SQLiteと作業ファイルはアプリ独自の暗号化をしません。
+
+## 配布版を再ビルドする（開発担当者のみ）
+
+Windows x64とCPython 3.14.6完全版を用意し、リポジトリのルートで実行します。会社の利用者が実施する必要はありません。
+
+```bat
+py -3.14 build_windows.py
+```
+
+ビルド専用venvへハッシュ固定のPyInstaller 6.22.3等を導入し、テスト、EXE作成、日本語・空白パスからの同梱ランタイム検証、ZIP化を行います。ビルド中だけ依存取得のインターネット接続を使います。オフラインでビルドする場合は、ロックされたWindows wheel一式を用意して `py -3.14 build_windows.py --wheelhouse C:\BuildWheels` とします。
+
+Windows CIも `.github/workflows/python-windows.yml` に用意しています。Macで作ったバイナリをWindows用EXEとして配布することはありません。配布物内の `BUILD-MANIFEST.json` にPython・ツール版・全資材のSHA-256を記録します。
+
+参考: [Python 3.14.6公式配布](https://www.python.org/downloads/release/python-3146/)、[Tkinter](https://docs.python.org/3.14/library/tkinter.html)、[PyInstallerのOS別ビルド](https://pyinstaller.org/en/stable/operating-mode.html)。

@@ -1,0 +1,88 @@
+{
+  "python": "3.14.6",
+  "platform": "Windows-2022Server-10.0.20348-SP0",
+  "architecture": "AMD64",
+  "memory_scope": "Whole process lifetime peak RSS/working set, including SQLite and Tk; cumulative across cases",
+  "results": [
+    {
+      "case": "1",
+      "bytes": 1206349,
+      "elements": 304,
+      "parse_seconds": 0.22928519999993568,
+      "commit_wait_seconds": 0.13114860000030149,
+      "graph_seconds": 1.05793529999994,
+      "search_seconds": 0.010381700000039018,
+      "search_hits": 3,
+      "database_bytes": 1638400,
+      "cleanup_seconds": 0.25578089999999065,
+      "peak_memory_bytes": 47218688
+    },
+    {
+      "case": "10",
+      "bytes": 10857054,
+      "elements": 2728,
+      "parse_seconds": 1.9926633000000038,
+      "commit_wait_seconds": 1.5639803000007078,
+      "graph_seconds": 0.08147540000004483,
+      "search_seconds": 0.07283620000009705,
+      "search_hits": 27,
+      "database_bytes": 14282752,
+      "cleanup_seconds": 1.4932863999999881,
+      "peak_memory_bytes": 58859520
+    },
+    {
+      "case": "100",
+      "bytes": 104951657,
+      "elements": 26362,
+      "parse_seconds": 21.34271709999996,
+      "commit_wait_seconds": 17.976202899998498,
+      "graph_seconds": 0.07500819999995656,
+      "search_seconds": 0.6727568000000019,
+      "search_hits": 261,
+      "database_bytes": 137711616,
+      "compare_seconds": 0.07351610000000619,
+      "comparison_counts": {
+        "ADDED": 0,
+        "REMOVED": 0,
+        "MODIFIED": 1,
+        "MOVED": 0,
+        "UNCHANGED": 52461,
+        "AMBIGUOUS": 0
+      },
+      "xlsx_seconds": 2.841621800000098,
+      "xlsx_rows": 26100,
+      "xlsx_bytes": 600297,
+      "csv_seconds": 2.7338079999999536,
+      "csv_rows": 26100,
+      "csv_bytes": 105102119,
+      "cleanup_seconds": 22.796320300000048,
+      "peak_memory_bytes": 61997056
+    },
+    {
+      "case": "500",
+      "bytes": 524356863,
+      "elements": 131705,
+      "parse_seconds": 120.6959041,
+      "commit_wait_seconds": 103.7085560999908,
+      "graph_seconds": 0.07148619999998118,
+      "search_seconds": 3.197359100000085,
+      "search_hits": 1304,
+      "database_bytes": 688742400,
+      "cleanup_seconds": 45.446890499999995,
+      "peak_memory_bytes": 61997056
+    },
+    {
+      "case": "million",
+      "bytes": 7015013,
+      "elements": 1001001,
+      "parse_seconds": 52.94300899999996,
+      "commit_wait_seconds": 14.857496699999842,
+      "graph_seconds": 0.06849479999993946,
+      "search_seconds": 9.077553999999964,
+      "search_hits": 1000,
+      "database_bytes": 423440384,
+      "cleanup_seconds": 63.41332790000001,
+      "peak_memory_bytes": 63889408
+    }
+  ]
+}

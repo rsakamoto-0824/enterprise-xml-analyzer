@@ -1,5 +1,7 @@
 # 要件と実装範囲
 
+この文書は旧Web版v1の記録です。2026年10月25日の変更指示により、現行版はPython 3.14.6のスタンドアローンアプリです。現行の構成・制限は[Python版設計](python-design.md)、利用方法は[Windowsガイド](python-windows.md)を参照してください。IIS/Electronを現行版の実行要件として扱いません。
+
 添付の「Enterprise XML Visualizer, Comparator & Excel Exporter v3.0」を基準とします。サーバーはIIS静的配信のみ、利用者側でXML解析・比較・出力、外部インターネット不要、日本語UIを主条件とします。
 
 | 機能 | 実装 |
