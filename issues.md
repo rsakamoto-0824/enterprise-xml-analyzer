@@ -1,17 +1,17 @@
-# 残課題と確認状況
+# Pythonスタンドアローン版の確認状況
 
-- [x] XMLの分割解析、Worker、IndexedDB、遅延表示を実装
-- [x] 3モード比較、抽出プレビュー、XLSX/CSV、JSON設定を実装
-- [x] 100MiBの2ファイル比較とXLSX生成を実測
-- [x] 保存用プロファイルで500MiB・100万要素の解析/表示/検索を実測
-- [x] ツリーの高さが伸びる不具合を修正し、仮想表示の操作テストを追加
-- [x] 全データ削除をDB削除方式に変更し、残存プレビューも再読込で破棄
-- [ ] Windows Server 2019 / IIS / Windows 11 Edgeで受入試験
-- [ ] 会社のWindows認証、HTTPS証明書、権限、UNC、DPI設定で確認
-- [ ] Windows版Excelで全シートを開き、警告なし・保存再オープンを確認
-- [ ] Workerを含むブラウザ全プロセスの最大メモリを計測
-- [ ] 大量の兄弟要素の比較索引を改善、別親への移動検出を追加
-- [ ] 大容量XLSXのブラウザ逐次生成方式を再評価（現在は制限付きXLSX＋逐次CSV）
-- [ ] 開発用browserifyの間接依存に残る低リスク監査4件を解消
-- [ ] ElectronのWindowsビルド・実行を確認
-- [ ] GitHubへの保存先と対象ブランチ確定後、Privateを確認してpush・PR
+- [x] 実行環境をCPython 3.14.6へ固定（設定・起動チェック・Windowsビルド）
+- [x] 実行時の追加pip依存をなくし、Tkinter・SQLite・Expatへ移行
+- [x] 分割XML解析、階層・グラフ、検索、3モード比較を実装
+- [x] 項目抽出、条件、型、繰り返し、プレビュー、複数XML出力、旧JSON設定移行を実装
+- [x] XLSXとCSVをディスクへ逐次生成し、成功時に保存先へ置換
+- [x] Windows x64用EXEとPython 3.14.6・Tcl/Tk等を同梱するビルドを作成
+- [x] Windowsのドラッグ＆ドロップ、日本語・空白パス、外部Pythonを参照しない同梱EXEの起動を検証
+- [x] Windowsで1/10/100/500MiBと100万要素を合成データで検証
+- [x] Excel出力を独立した読み取りライブラリと全シートのPDF表示で確認
+- [ ] 会社のWindows 11 / Windows Server 2019で実行許可・UNC・DPI設定を受入確認
+- [ ] Windows版Microsoft Excelで修復警告・再保存・再オープンを確認
+- [ ] 会社向けのコード署名・配布管理を実施
+- [ ] 任意XPath、別親への移動検出、巨大な兄弟集合のディスク上キー索引を拡張
+
+旧Web版の課題は [移行前の記録](docs/legacy-web-issues.md) に保存しています。実測・具体的な制限はdocs/python-test-report.mdとdocs/python-design.mdを参照してください。

@@ -14,7 +14,8 @@ def main():
                                      ".python-version", "pyproject.toml", "requirements-build-windows.txt", "README.md")]
     for folder, pattern in (("xml_analyzer", "*.py"), ("tests_python", "*.py"), ("docs", "python-*.md")):
         files.extend(sorted((ROOT / folder).glob(pattern)))
-    files.append(ROOT / "scripts/package_python.py")
+    files.extend(ROOT / name for name in ("scripts/package_python.py", "scripts/performance_python.py", "docs/legacy-web-readme.md", ".github/workflows/python-windows.yml"))
+    files.extend(sorted((ROOT / "docs/validation").glob("python-*.json")))
     manifest = {"app": "enterprise-xml-analyzer-python-source", "python": "3.14.6", "files": []}
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
         for path in files:

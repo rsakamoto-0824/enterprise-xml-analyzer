@@ -1,0 +1,94 @@
+[
+  {
+    "file": "extraction.xlsx",
+    "external_links": 0,
+    "vba": false,
+    "sheets": [
+      {
+        "name": "抽出結果",
+        "rows": 3,
+        "columns": 6,
+        "values": [
+          [
+            "ID",
+            "名前",
+            "価格",
+            "日付",
+            "有効",
+            "文字列"
+          ],
+          [
+            "001",
+            "りんご",
+            100,
+            "2026-10-25 00:00:00",
+            true,
+            "=1+1"
+          ],
+          [
+            "002",
+            "みかん",
+            200,
+            "2026-10-26 00:00:00",
+            false,
+            "_x005F_x0000_"
+          ]
+        ],
+        "formulas": 0,
+        "errors": 0,
+        "filter": "A1:F3",
+        "freeze": "A2"
+      }
+    ],
+    "escape_validation": "openpyxl exposes the OOXML escape in inlineStr; LibreOffice PDF independently displayed the original literal _x0000_."
+  },
+  {
+    "file": "child-sheets.xlsx",
+    "external_links": 0,
+    "vba": false,
+    "sheets": [
+      {
+        "name": "親",
+        "rows": 2,
+        "columns": 2,
+        "values": [
+          [
+            "RecordPath",
+            "ID"
+          ],
+          [
+            "/r[1]/n[1]",
+            "001"
+          ]
+        ],
+        "formulas": 0,
+        "errors": 0,
+        "filter": "A1:B2",
+        "freeze": "A2"
+      },
+      {
+        "name": "繰り返し",
+        "rows": 3,
+        "columns": 2,
+        "values": [
+          [
+            "RecordPath",
+            "値"
+          ],
+          [
+            "/r[1]/n[1]",
+            "A"
+          ],
+          [
+            "/r[1]/n[1]",
+            "B"
+          ]
+        ],
+        "formulas": 0,
+        "errors": 0,
+        "filter": "A1:B3",
+        "freeze": "A2"
+      }
+    ]
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "python": "3.14.6",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "tk": "9.0.4",
+  "frozen": false,
+  "files": 2,
+  "modified": 1,
+  "xlsx_rows": 4,
+  "gui": "Tk application, background import, tree and canvas",
+  "network": "blocked",
+  "screenshots": []
+}

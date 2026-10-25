@@ -39,6 +39,11 @@ def main():
                     "--specpath", str(BUILD), str(ROOT / "run.py")], check=True, cwd=ROOT)
     folder = BUILD / "dist" / NAME
     shutil.copy2(ROOT / "docs/python-windows.md", folder / "README-Windows.md")
+    for name in ("python-design.md", "python-test-report.md"):
+        shutil.copy2(ROOT / "docs" / name, folder / name)
+    (folder / "validation").mkdir(exist_ok=True)
+    for source in (ROOT / "docs/validation").glob("python-*.json"):
+        shutil.copy2(source, folder / "validation" / source.name)
     shutil.copy2(ROOT / "requirements-build-windows.txt", folder / "BUILD-DEPENDENCIES.txt")
     license_file = Path(sys.base_prefix) / "LICENSE.txt"
     if not license_file.is_file():
