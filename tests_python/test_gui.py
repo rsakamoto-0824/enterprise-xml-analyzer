@@ -150,6 +150,27 @@ class GuiTests(unittest.TestCase):
         self.assertIsNotNone(self.app.poll_id)
         self.root.update()
 
+    def test_export_actions_remain_reachable_on_a_small_screen(self):
+        self.root.geometry("1000x650+0+0")
+        self.root.deiconify()
+        self.app.tabs.select(self.app.pages["Excel出力"])
+        self.root.update()
+        self.app.export_scroll.yview_moveto(1)
+        self.root.update()
+        def find(widget):
+            for child in widget.winfo_children():
+                if isinstance(child, ttk.Button) and child.cget("text") == "XLSX保存":
+                    return child
+                result = find(child)
+                if result:
+                    return result
+        from tkinter import ttk
+        button = find(self.app.pages["Excel出力"])
+        self.assertIsNotNone(button)
+        top = self.app.export_scroll.winfo_rooty()
+        self.assertGreaterEqual(button.winfo_rooty(), top)
+        self.assertLess(button.winfo_rooty() + button.winfo_height(), top + self.app.export_scroll.winfo_height())
+
     @unittest.skipUnless(sys.platform == "win32", "native WM_DROPFILES is Windows only")
     def test_windows_native_drop_unicode_paths(self):
         from ctypes import wintypes

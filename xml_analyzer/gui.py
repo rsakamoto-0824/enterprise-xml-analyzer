@@ -70,8 +70,10 @@ class Application:
         self.status = tk.StringVar(value="XMLファイルを選択、またはウインドウへドロップしてください。")
         self.current_file = tk.StringVar()
         self.root.title(f"Enterprise XML Analyzer {VERSION} — Python 3.14.6")
-        self.root.geometry("1320x860")
-        self.root.minsize(1050, 700)
+        width = min(1320, max(980, self.root.winfo_screenwidth() - 60))
+        height = min(860, max(620, self.root.winfo_screenheight() - 100))
+        self.root.geometry(f"{width}x{height}+20+20")
+        self.root.minsize(980, 620)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
         self.root.report_callback_exception = lambda kind, value, trace: self.report(value)
         self._style()
@@ -373,6 +375,9 @@ class Application:
         self.detail.pack(fill="both", expand=True, pady=5)
         self.search_results = make_table(page, ["検索結果", "パス"], {"パス": 750}, height=3)
         self.search_results.bind("<<TreeviewSelect>>", self.search_selected)
+        self.search_results.master.pack_configure(side="bottom", fill="x", expand=False)
+        panes.pack_forget()
+        panes.pack(fill="both", expand=True, pady=8)
 
     def add_children(self, parent_item, file_id, parent_id, after=0):
         batch = self.store.children(file_id, parent_id, after, PAGE_SIZE + 1)
@@ -526,7 +531,9 @@ class Application:
             self.differences.tag_configure(kind, foreground=color)
         self.differences.bind("<<TreeviewSelect>>", self.show_diff_detail)
         self.diff_detail = tk.Text(page, height=7, wrap="word", font=("Yu Gothic UI", 10))
-        self.diff_detail.pack(fill="x", pady=5)
+        self.diff_detail.pack(side="bottom", fill="x", pady=5)
+        self.differences.master.pack_forget()
+        self.differences.master.pack(fill="both", expand=True, pady=5)
 
     def start_compare(self):
         a, b = self.file_labels.get(self.compare_a.get()), self.file_labels.get(self.compare_b.get())
@@ -613,7 +620,16 @@ class Application:
         self.run("差分Excel保存", lambda task: write_xlsx(target, difference_rows(self.store, comparison, kind, task), template, task))
 
     def _export_page(self):
-        page = self.pages["Excel出力"]
+        container = self.pages["Excel出力"]
+        scroll = ttk.Scrollbar(container, orient="vertical")
+        scroll.pack(side="right", fill="y")
+        self.export_scroll = tk.Canvas(container, highlightthickness=0, yscrollcommand=scroll.set)
+        self.export_scroll.pack(fill="both", expand=True)
+        scroll.configure(command=self.export_scroll.yview)
+        page = ttk.Frame(self.export_scroll)
+        window = self.export_scroll.create_window((0, 0), window=page, anchor="nw")
+        self.export_scroll.bind("<Configure>", lambda e: self.export_scroll.itemconfigure(window, width=e.width))
+        page.bind("<Configure>", lambda e: self.export_scroll.configure(scrollregion=self.export_scroll.bbox("all")))
         upper = ttk.Frame(page)
         upper.pack(fill="x")
         selection = ttk.LabelFrame(upper, text="対象XML（複数選択可）")
