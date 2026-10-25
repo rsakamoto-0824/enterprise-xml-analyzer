@@ -69,10 +69,14 @@ def main():
     if result.get("status") != "PASS" or result.get("python") != "3.14.6" or not result.get("frozen"):
         raise SystemExit("Frozen runtime verification failed.")
     manifest = {"app": "enterprise-xml-analyzer-python", "version": "2.0.0", "python": "3.14.6",
-                "platform": platform.platform(), "pyinstaller": "6.22.3", "files": []}
+                "platform": platform.platform(), "pyinstaller": "6.22.3", "files": [], "source_sha256": {}}
+    for source in sorted((ROOT / "xml_analyzer").glob("*.py")) + [ROOT / "run.py"]:
+        manifest["source_sha256"][source.relative_to(ROOT).as_posix()] = hashlib.sha256(source.read_bytes()).hexdigest()
     for file in sorted(folder.rglob("*")):
         if file.is_file():
-            manifest["files"].append({"path": file.relative_to(folder).as_posix(), "sha256": hashlib.file_digest(file.open("rb"), "sha256").hexdigest()})
+            with file.open("rb") as handle:
+                digest = hashlib.file_digest(handle, "sha256").hexdigest()
+            manifest["files"].append({"path": file.relative_to(folder).as_posix(), "sha256": digest})
     (folder / "BUILD-MANIFEST.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     target = ARTIFACTS / "enterprise-xml-analyzer-windows-x64-python3146.zip"
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
