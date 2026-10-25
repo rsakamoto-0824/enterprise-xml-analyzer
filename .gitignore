@@ -8,3 +8,10 @@ playwright-report/
 *.log
 .env*
 .generated/
+__pycache__/
+*.py[cod]
+.venv/
+.build-python/
+build-python/
+*.sqlite*
+*.xmlwork

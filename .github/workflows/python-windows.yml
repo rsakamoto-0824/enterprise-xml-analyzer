@@ -1,0 +1,36 @@
+name: Python 3.14.6 Windows standalone
+on:
+  push:
+    branches: [main, 'feat/python-standalone-3146']
+    paths: ['xml_analyzer/**', 'tests_python/**', '*.py', '*.cmd', 'scripts/*python.py', 'pyproject.toml', '.python-version', 'requirements-build-windows.txt', '.github/workflows/python-windows.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.14.6'
+          architecture: x64
+      - name: Verify exact Python and native Tk
+        run: python -c "import sys,tkinter; assert sys.version_info[:3]==(3,14,6); r=tkinter.Tk(); r.withdraw(); r.update(); r.destroy()"
+      - name: Unit tests, native Windows integration, frozen build and isolated-runtime test
+        run: python build_windows.py
+      - name: Synthetic large XML and streaming XLSX/CSV performance
+        run: python scripts/performance_python.py --cases 1,10,100,500,million --output artifacts/python-windows-performance.json
+      - name: Upload Windows package and verification
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: enterprise-xml-analyzer-windows-python3146
+          path: |
+            artifacts/enterprise-xml-analyzer-windows-x64-python3146.zip
+            artifacts/python-windows-frozen-selftest.json
+            artifacts/python-windows-performance.json
+          if-no-files-found: error
+          retention-days: 14
