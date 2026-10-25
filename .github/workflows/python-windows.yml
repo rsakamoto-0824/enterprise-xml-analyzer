@@ -22,6 +22,10 @@ jobs:
           architecture: x64
       - name: Verify exact Python and native Tk
         run: python -c "import sys,tkinter; assert sys.version_info[:3]==(3,14,6); r=tkinter.Tk(); r.withdraw(); r.update(); r.destroy()"
+      - name: Package offline HTML guide and Python source
+        run: |
+          python scripts/package_user_guide.py
+          python scripts/package_python.py
       - name: Unit tests, native Windows integration, frozen build and isolated-runtime test
         run: python build_windows.py
       - name: Check whether the processing engine changed
@@ -43,6 +47,9 @@ jobs:
           name: enterprise-xml-analyzer-windows-python3146
           path: |
             artifacts/enterprise-xml-analyzer-windows-x64-python3146.zip
+            artifacts/enterprise-xml-analyzer-user-guide.html
+            artifacts/enterprise-xml-analyzer-user-guide.zip
+            artifacts/enterprise-xml-analyzer-python-source.zip
             artifacts/python-windows-frozen-selftest.json
             artifacts/python-windows-performance.json
             artifacts/python-selftest-*.png

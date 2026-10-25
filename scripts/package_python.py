@@ -16,6 +16,8 @@ def main():
         files.extend(sorted((ROOT / folder).glob(pattern)))
     files.extend(ROOT / name for name in ("scripts/package_python.py", "scripts/performance_python.py", "docs/legacy-web-readme.md", ".github/workflows/python-windows.yml"))
     files.extend(sorted((ROOT / "docs/validation").glob("python-*.json")))
+    files.extend(path for path in sorted((ROOT / "docs/python-user-guide").rglob("*")) if path.is_file())
+    files.extend(ROOT / name for name in ("scripts/package_user_guide.py", "scripts/capture_guide_python.py"))
     manifest = {"app": "enterprise-xml-analyzer-python-source", "python": "3.14.6", "files": []}
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
         for path in files:

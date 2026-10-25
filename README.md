@@ -18,6 +18,8 @@ py -3.14 run.py
 
 ## 使い方
 
+[スクリーンショット付きHTML操作手順書](docs/python-user-guide/procedure-guide.html) を用意しています。Windows配布版では `UserGuide/procedure-guide.html` をブラウザで開いてください。練習用XMLも同梱しています。HTML単体版と手順書ZIPは `python scripts/package_user_guide.py` で作成できます。
+
 1. 「XML読込」でXMLを選択、またはウインドウへドロップします。
 2. 「構造ビュー」で繰り返し要素を選び、「この要素を出力の1行にする」を押します。
 3. 「Excel出力」で列を選び、型・繰り返し・条件を設定します。列の編集後は「列へ反映」で確定します。

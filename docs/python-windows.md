@@ -1,5 +1,7 @@
 # Python版をWindowsで使う
 
+スクリーンショット付きの操作手順は、配布フォルダの `UserGuide/procedure-guide.html` をブラウザで開いてください。リポジトリでは [HTML操作手順書](python-user-guide/procedure-guide.html) にあります。
+
 対象はWindows 11 x64およびWindows Server 2019以降のデスクトップ環境です。実測・動作確認したOSはpython-test-report.mdに記録します。Windows Server Core、32bit、Windows ARM64のネイティブ実行は対象外です。
 
 ## Windows配布版（推奨）

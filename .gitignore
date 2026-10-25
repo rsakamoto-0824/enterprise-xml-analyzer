@@ -4,6 +4,7 @@ artifacts/
 output/
 test-results/
 playwright-report/
+.playwright-cli/
 .DS_Store
 *.log
 .env*

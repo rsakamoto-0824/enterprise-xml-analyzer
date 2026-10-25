@@ -1,0 +1,29 @@
+{
+  "platform": "Windows-2022Server-10.0.20348-SP0",
+  "python": "3.14.6",
+  "tk": "8.6.15",
+  "screenshots": [
+    "01-start.png",
+    "02-loaded.png",
+    "03-tree.png",
+    "04-search.png",
+    "05-graph.png",
+    "06-compare.png",
+    "07-columns.png",
+    "08-preview.png",
+    "09-saved.png",
+    "10-settings.png"
+  ],
+  "sample_rows": 3,
+  "comparison_counts": {
+    "ADDED": 0,
+    "REMOVED": 0,
+    "MODIFIED": 2,
+    "MOVED": 0,
+    "UNCHANGED": 20,
+    "AMBIGUOUS": 0
+  },
+  "note": "Unedited real Tk application captures; synthetic samples only. Save chooser substituted, actual XLSX writer executed.",
+  "github_run": "https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions/runs/40174537903",
+  "source_commit": "6371a83fe5faba98d3c90acbc5d54c2ab86fc6d6"
+}

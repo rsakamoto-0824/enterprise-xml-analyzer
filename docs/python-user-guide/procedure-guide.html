@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Enterprise XML Analyzer Windows版の起動、XML読込、構造・グラフ表示、比較、Excel出力を実画面で説明する操作手順書。">
+  <title>Enterprise XML Analyzer｜Windows版 操作手順書</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="procedure-guide.css">
+  <link rel="stylesheet" href="guide.css">
+  <script src="procedure-guide.js" defer></script>
+  <script src="guide.js" defer></script>
+</head>
+<body id="top">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <button id="toc-toggle" class="toc-toggle" type="button" aria-controls="sidebar" aria-expanded="false">☰ 目次</button>
+  <aside id="sidebar" class="sidebar" aria-label="目次">
+    <div class="sidebar-header"><p class="eyebrow">Windows Desktop · v2.0</p><p class="sidebar-title">Enterprise XML<br>Analyzer</p><p class="sidebar-subtitle">スクリーンショット付き操作手順書</p></div>
+    <nav><ol class="toc-list">
+      <li><a href="#overview">01 目的と対象</a></li><li><a href="#prepare">02 展開したフォルダの確認</a></li><li><a href="#workflow">03 全体の流れ・練習用XML</a></li><li><a href="#launch">04 アプリを起動する</a></li><li><a href="#load">05 XMLを読み込む</a></li><li><a href="#tree">06 構造・検索を確認する</a></li><li><a href="#graph">07 グラフで見る</a></li><li><a href="#compare">08 2つのXMLを比較する</a></li><li><a href="#export">09 Excelへ出力する</a></li><li><a href="#save">10 設定と作業を保存・終了する</a></li><li><a href="#verification">11 完了確認</a></li><li><a href="#troubleshooting">12 困ったとき</a></li>
+    </ol></nav>
+    <div class="sidebar-footer"><span class="status-dot" aria-hidden="true"></span>外部通信不要 · PC内で処理</div>
+  </aside>
+  <div id="sidebar-overlay" class="sidebar-overlay" aria-hidden="true"></div>
+  <main id="main-content" class="main-content">
+    <header class="hero"><div class="hero-content"><p class="eyebrow">User Guide · Python 3.14.6 Bundled</p><h1>Enterprise XML Analyzer<br><span>Windows版 操作手順書</span></h1><p class="hero-lead">ZIPを展開したところから、XMLの確認・比較・Excel保存まで。画面と同じ練習用データを使って、一通りの操作を試せます。</p><div class="hero-badges"><span>対象: Windows x64配布版</span><span>Pythonの追加インストール不要</span><span>更新: 2026/10/25</span></div></div></header>
+
+    <section id="overview" class="content-section"><div class="section-heading"><span class="section-number">01</span><div><p class="section-kicker">Overview</p><h2>目的と対象</h2></div></div>
+      <p>このアプリは、XMLファイルの中身を階層やグラフで確認し、2つのXMLの違いを調べ、必要な項目をExcel・CSVへ取り出すためのデスクトップアプリです。XML原本を直接編集する機能はありません。</p>
+      <div class="card-grid three-columns"><article class="feature-card"><span class="card-label">見る</span><h3>構造・値・関連を確認</h3><p>ツリー、検索、グラフから必要な要素を探します。</p></article><article class="feature-card"><span class="card-label">比べる</span><h3>変更前後の違いを確認</h3><p>構造・値・完全比較を選び、変更箇所へ移動します。</p></article><article class="feature-card"><span class="card-label">取り出す</span><h3>必要な項目をExcelへ</h3><p>1行の単位を選び、列や型を設定して保存します。</p></article></div>
+      <p class="small-note">画面はWindows Server 2022 x64・Python 3.14.6・Tk 8.6.15でアプリを実行して撮影しました。Windows 11／Server 2019は想定対象ですが、会社環境での受入確認は未実施です。画面の配色や文字の大きさはPCの設定で変わります。画像をクリックすると拡大できます。</p>
+    </section>
+
+    <section id="prepare" class="content-section"><div class="section-heading"><span class="section-number">02</span><div><p class="section-kicker">Before You Start</p><h2>展開したフォルダを確認する</h2></div></div>
+      <p>GitHubから取得したファイルが<strong>Windows実行版</strong>であることを確認します。利用者PCにPythonや開発ツールをインストールする必要はありません。</p>
+      <ol class="numbered-steps"><li><div><strong>ダウンロードしたZIPを右クリックし、「すべて展開」を実行します。</strong><p>ZIPを開いただけの状態からEXEを実行しないでください。書き込み可能なローカルフォルダへすべて展開します。</p></div></li><li><div><strong>中にもう1つZIPがあれば、そのZIPもすべて展開します。</strong><p>GitHub ActionsのArtifactsから取得した場合、外側のZIPに <code>enterprise-xml-analyzer-windows-x64-python3146.zip</code> が入っています。内側のZIPも展開してください。</p></div></li><li><div><strong>次のEXEとフォルダが同じ場所にあることを確認します。</strong><p><code>EnterpriseXmlAnalyzer</code> フォルダの中に入って確認します。</p></div></li></ol>
+      <div class="code-block"><div class="code-header"><span>展開後の構成（例）</span></div><pre><code>EnterpriseXmlAnalyzer/
+├─ EnterpriseXmlAnalyzer.exe  ← ダブルクリックするファイル
+├─ _internal/                ← 実行に必要。EXEと一緒に保管
+├─ README-Windows.md
+├─ PYTHON-LICENSE.txt
+└─ その他の同梱文書・ライセンス</code></pre></div>
+      <div class="callout warning"><div class="callout-icon" aria-hidden="true">!</div><div><h3>EXEだけを移動しないでください</h3><p>移動する場合は <code>EnterpriseXmlAnalyzer</code> フォルダごと移動します。GitHubの「Code → Download ZIP」で取得するソース一式には、実行用EXEは含まれません。EXEがない場合は配布担当者からWindows実行版を取得してください。</p></div></div>
+      <p class="small-note">この手順書はPCのEdge・Chrome等で閲覧します。アプリ自体はブラウザやインターネット接続を必要としません。実行対象はWindows x64のデスクトップ環境です。Server Core・32bitは対象外です。</p>
+    </section>
+
+    <section id="workflow" class="content-section"><div class="section-heading"><span class="section-number">03</span><div><p class="section-kicker">Workflow</p><h2>全体の流れ・練習用XML</h2></div></div>
+      <div class="workflow"><div class="workflow-step"><span>1</span><strong>起動</strong><small>EXEを開く</small></div><div class="workflow-arrow" aria-hidden="true">→</div><div class="workflow-step"><span>2</span><strong>読込</strong><small>XMLを選ぶ</small></div><div class="workflow-arrow" aria-hidden="true">→</div><div class="workflow-step"><span>3</span><strong>確認・比較</strong><small>構造や差分を見る</small></div><div class="workflow-arrow" aria-hidden="true">→</div><div class="workflow-step"><span>4</span><strong>Excel保存</strong><small>列を選んで出力</small></div><div class="workflow-arrow" aria-hidden="true">→</div><div class="workflow-step"><span>5</span><strong>終了</strong><small>必要な作業を保存</small></div></div>
+      <p>練習用XMLは架空の商品3件です。次の2ファイルを同じフォルダに保存してください。手元のXMLでも操作できますが、表示される要素名や件数は変わります。</p>
+      <div class="download-row"><a class="download-link" href="samples/sample-before.xml" download="sample-before.xml">変更前XMLを保存</a><a class="download-link" href="samples/sample-after.xml" download="sample-after.xml">変更後XMLを保存</a></div>
+      <p>ブラウザでXMLが開いた場合は、リンクを右クリックして「名前を付けてリンク先を保存」などを選び、拡張子を <code>.xml</code> にします。</p>
+      <div class="table-wrap"><table><caption>練習用データの内容</caption><thead><tr><th>商品ID</th><th>商品名</th><th>単価（変更前 → 変更後）</th><th>在庫数（変更前 → 変更後）</th></tr></thead><tbody><tr><td>001</td><td>りんご</td><td>120 → <strong>150</strong></td><td>30 → 30</td></tr><tr><td>002</td><td>みかん</td><td>80 → 80</td><td>50 → 50</td></tr><tr><td>003</td><td>ぶどう</td><td>350 → 350</td><td>12 → <strong>10</strong></td></tr></tbody></table></div>
+    </section>
+
+    <section id="launch" class="content-section"><div class="section-heading"><span class="section-number">04</span><div><p class="section-kicker">Launch</p><h2>アプリを起動する</h2></div></div>
+      <ol class="numbered-steps"><li><div><strong><code>EnterpriseXmlAnalyzer.exe</code> をダブルクリックします。</strong><p>展開したフォルダ内のEXEを実行します。通常、管理者として実行する必要はありません。</p></div></li><li><div><strong>タイトルと「XML読込」画面を確認します。</strong><p>「XML読込」「構造ビュー」「グラフ」「XML比較」「Excel出力」「統計」「設定」の7つのタブが表示されます。処理の状況と「中断」ボタンは画面下部にあります。</p></div></li></ol>
+      <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="起動直後の画面を拡大"><img src="images/01-start.png" alt="起動直後。XML読込タブにXMLファイルを選択ボタンと空の一覧が表示されている。" width="984" height="688"></button><figcaption>画面1｜起動直後。まず「XMLファイルを選択」を使います。</figcaption></figure>
+      <p class="small-note">未署名EXEのためWindowsや会社の管理機能が起動を止める場合があります。会社の実行ルールに従って配布担当者へ確認してください。セキュリティ機能を無効にして実行しないでください。</p>
+    </section>
+
+    <section id="load" class="content-section"><div class="section-heading"><span class="section-number">05</span><div><p class="section-kicker">Import</p><h2>XMLを読み込む</h2></div></div>
+      <ol class="numbered-steps"><li><div><strong>「XML読込」→「XMLファイルを選択」を押します。</strong><p><code>sample-before.xml</code> と <code>sample-after.xml</code> を選び、「開く」を押します。Ctrlキーを押しながら選ぶと複数選択できます。アプリのウインドウへXMLをドラッグしても読み込めます。</p></div></li><li><div><strong>読込が終わるまで待ち、一覧に2ファイルあることを確認します。</strong><p>一覧にファイル名・サイズ・要素数などが表示され、画面下部が「XML読込 · 完了」になります。保持できるXMLは合計16ファイルまでです。</p></div></li><li><div><strong>画面右上で、これから見るXMLを選びます。</strong><p>この後の構造表示・検索・グラフは <code>sample-before.xml</code> を選んで進めます。比較とExcel出力はそれぞれのタブでも対象を指定します。</p></div></li></ol>
+      <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="XML読込後の画面を拡大"><img src="images/02-loaded.png" alt="XML読込後の画面。練習用XMLが2ファイル一覧に表示される。" width="984" height="688" loading="lazy"></button><figcaption>画面2｜2ファイルの読込完了。右上の選択欄で表示するXMLを切り替えます。</figcaption></figure>
+      <div class="callout tip"><div class="callout-icon" aria-hidden="true">✓</div><div><h3>大きなXMLを処理するとき</h3><p>読込には時間がかかります。処理中は他の操作が一時的に無効になります。中断する場合は画面右下の「中断」を1回押して待ちます。途中でアプリを強制終了しないでください。</p></div></div>
+    </section>
+
+    <section id="tree" class="content-section"><div class="section-heading"><span class="section-number">06</span><div><p class="section-kicker">Structure &amp; Search</p><h2>構造・検索を確認する</h2></div></div>
+      <h3>ツリーから1件分のまとまりを探す</h3><ol class="numbered-steps"><li><div><strong>右上で変更前XMLを選び、「構造ビュー」を開きます。</strong><p>左の <code>catalog</code> を展開すると、商品1件を表す <code>item</code> が3つ並びます。項目の左の「＋」で子の要素を開きます。</p></div></li><li><div><strong>最初の <code>item</code> をクリックします。</strong><p>右側にパスや属性が表示されます。詳細欄が小さい場合は、その中をスクロールして確認します。<code>id="001"</code> が最初の商品です。<code>name</code> は商品名、<code>price</code> は単価、<code>stock</code> は在庫数です。</p></div></li></ol>
+      <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="構造ビューの画面を拡大"><img src="images/03-tree.png" alt="構造ビューでcatalog内の最初のitemを選択。右に詳細と、この要素を出力の1行にするボタンが表示される。" width="984" height="688" loading="lazy"></button><figcaption>画面3｜<code>item</code> がExcelの「1行」に相当します。あとでこの要素を出力の基準にします。</figcaption></figure>
+      <h3>名前や値で検索する</h3><p>上部の入力欄へ <code>price</code> を入れ、対象を「要素名」、必要に応じて「完全一致」にチェックし、「検索」を押します。練習用の変更前XMLでは3件が見つかります。下部の検索結果をクリックすると該当要素へ移動します。属性名・属性値・テキスト・パスでも検索できます。</p>
+      <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="検索結果の画面を拡大"><img src="images/04-search.png" alt="priceを要素名で完全一致検索し、下部に3件の結果が表示される。" width="984" height="688" loading="lazy"></button><figcaption>画面4｜検索対象は右上で選んだXMLです。検索結果の行から要素へ移動できます。</figcaption></figure>
+      <p class="small-note">「XML断片を表示」は選択部分のXMLを別画面で確認する機能です。ツリーは必要な部分を順に表示します。非常に大きなデータを一度にすべて開く機能ではありません。</p>
+    </section>
+
+    <section id="graph" class="content-section"><div class="section-heading"><span class="section-number">07</span><div><p class="section-kicker">Graph</p><h2>グラフで見る</h2></div></div>
+      <p>「構造ビュー」で <code>item</code> を選び、「選択サブツリーをグラフ表示」を押します。選んだ要素とその子の関係を図で確認できます。</p>
+      <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="グラフ画面を拡大"><img src="images/05-graph.png" alt="最初のitemからname、price、stockへ分かれるグラフ。上部に縦横、全体表示、拡大縮小、保存ボタンがある。" width="984" height="688" loading="lazy"></button><figcaption>画面5｜「縦／横」で向きを変更できます。「全体を表示」はグラフに読み込んだ範囲の折りたたみを解除して表示します。</figcaption></figure>
+      <div class="table-wrap"><table><thead><tr><th>操作</th><th>使い方</th></tr></thead><tbody><tr><td>詳細を見る</td><td>ノードをクリックすると構造ビューの詳細へ移動します。</td></tr><tr><td>子を開く・閉じる</td><td>ノードをダブルクリックします。</td></tr><tr><td>表示位置・大きさ</td><td>ドラッグで移動。「拡大」「縮小」またはマウスホイールで倍率を変えます。</td></tr><tr><td>図を保存</td><td>「SVG保存」または「PNG保存」を押し、保存先を選びます。PNGは画面に見えているグラフ範囲を保存します。</td></tr></tbody></table></div>
+      <p class="small-note">グラフは最大500ノード・表示深さ4までの部分表示です。省略表示はXMLの欠落を意味しません。必要な部分を選び直して確認してください。</p>
+    </section>
+
+    <section id="compare" class="content-section"><div class="section-heading"><span class="section-number">08</span><div><p class="section-kicker">Compare</p><h2>2つのXMLを比較する</h2></div></div>
+      <ol class="numbered-steps"><li><div><strong>「XML比較」を開き、XML Aを変更前、XML Bを変更後にします。</strong><p><code>sample-before.xml</code> → <code>sample-after.xml</code> の順に指定します。追加・削除はAからBへの変化として読みます。</p></div></li><li><div><strong>「完全比較」、キー属性 <code>id</code> のまま「比較を開始」を押します。</strong><p>キー属性は同じ商品を対応づける目印です。この例では商品IDに相当します。実データでは識別に使う属性名を指定してください。</p></div></li><li><div><strong>結果の絞り込みを「変更」にして、行をクリックします。</strong><p>練習用では単価120→150と在庫数12→10の変更を確認します。下部の詳細で変更前後を読み、「Aの要素へ」「Bの要素へ」で実際の要素へ移動できます。</p></div></li><li><div><strong>必要なら「差分XLSX保存」で比較結果を保存します。</strong><p>「左右グラフ」では選んだ差分の周辺を並べて確認できます。結果が多い場合は「前の1000件」「次の1000件」でページを切り替えます。</p></div></li></ol>
+      <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="XML比較結果の画面を拡大"><img src="images/06-compare.png" alt="変更前と変更後を完全比較した画面。変更で絞り込むとpriceとstockの差分が並び、下に詳細が表示される。" width="984" height="688" loading="lazy"></button><figcaption>画面6｜「変更」で絞り込んだ結果。キー属性や比較オプションを変えると結果も変わります。</figcaption></figure>
+      <div class="table-wrap"><table><caption>比較モードの選び方</caption><thead><tr><th>モード</th><th>主な用途</th></tr></thead><tbody><tr><td>完全比較</td><td>構造・属性・値の違いをまとめて確認する。初回はこれを使用します。</td></tr><tr><td>構造比較</td><td>値の変更を除き、要素の構成や並びの違いを調べます。</td></tr><tr><td>値比較</td><td>対応づけられた箇所の属性・テキスト値の違いを中心に確認します。</td></tr></tbody></table></div>
+      <p class="small-note">分類は「追加・削除・変更・移動・変更なし・曖昧」です。「曖昧」は同じキーの重複などで対応を一意に決められない箇所です。親をまたぐ移動は追加・削除として扱います。「空白を除いて比較」「コメントを含む」などの設定は目的に合わせ、比較条件も記録してください。</p>
+    </section>
+
+    <section id="export" class="content-section"><div class="section-heading"><span class="section-number">09</span><div><p class="section-kicker">Excel Export</p><h2>必要な項目をExcelへ出力する</h2></div></div>
+      <h3>① 「1行」の単位を選ぶ</h3><ol class="numbered-steps"><li><div><strong>「構造ビュー」へ戻り、右上を変更前XMLにします。</strong><p>検索後は <code>price</code> などが選ばれていることがあります。左のツリーから商品1件を表す <code>item</code> を選び直します。</p></div></li><li><div><strong>「この要素を出力の1行にする」を押します。</strong><p>「Excel出力」へ移動し、「1行の基準となる要素パス」が <code>/catalog/item</code> になります。1つの <code>item</code> がExcelの1行になるため、変更前XMLから3行を出力します。</p></div></li><li><div><strong>左上「対象XML」で変更前だけを選びます。</strong><p>初期状態では複数のXMLが選ばれていることがあります。この練習では <code>sample-before.xml</code> を通常クリックして1つだけ選択します。複数選択はCtrlキーで操作します。</p></div></li></ol>
+      <h3>② 列名と型を整える</h3><p>候補の列は自動で作られます。表の行をクリックして、その下の「列名」と型を変更し、<strong>必ず「列へ反映」</strong>を押します。次の4列を順に設定してください。</p>
+      <div class="table-wrap"><table><caption>練習で使う列設定</caption><thead><tr><th>相対パス</th><th>列名</th><th>型</th><th>理由</th></tr></thead><tbody><tr><td><code>@id</code></td><td>商品ID</td><td><code>string</code></td><td>001の先頭ゼロを残します。</td></tr><tr><td><code>name</code></td><td>商品名</td><td><code>string</code></td><td>文字列として保存します。</td></tr><tr><td><code>price</code></td><td>単価</td><td><code>number</code></td><td>Excelで集計できる数値として保存します。</td></tr><tr><td><code>stock</code></td><td>在庫数</td><td><code>number</code></td><td>Excelで集計できる数値として保存します。</td></tr></tbody></table></div>
+      <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="Excel出力の列設定画面を拡大"><img src="images/07-columns.png" alt="Excel出力タブ。対象XMLは変更前のみ、基準パスはcatalog/item。商品ID、商品名、単価、在庫数の4列が設定されている。" width="984" height="688" loading="lazy"></button><figcaption>画面7｜列を選ぶ → 下で編集する → 「列へ反映」。IDは文字列のままにします。</figcaption></figure>
+      <p>不要な列は「出力ON/OFF」で外し、「上へ」「下へ」で順序を変えられます。繰り返しの初期値 <code>join</code> は複数値を1セルへ結合します。<code>first</code> は最初だけ、<code>rows</code> は行へ展開、<code>sheet</code> は子シートです。初回は初期値のままで構いません。</p>
+      <h3>③ プレビューを確認し、XLSXで保存する</h3><ol class="numbered-steps"><li><div><strong>「プレビュー100行」を押します。</strong><p>ボタンが見えない場合は、画面右端の縦スクロールバーで下へ移動します。「先頭3行」と商品ID001・002・003、変更前の単価120・80・350が見えることを確認します。プレビュー欄の中で下へスクロールすると続きの行が見られます。</p></div></li><li><div><strong>「XLSX保存」を押し、保存先とファイル名を指定します。</strong><p>例: <code>商品一覧.xlsx</code>。保存先の選択画面で「保存」を押し、処理の完了を待ちます。プレビュー100行の制限は表示だけで、保存は抽出対象全体に適用されます。</p></div></li><li><div><strong>画面下部の「XLSX保存 · 完了」を確認し、保存先でExcelを開きます。</strong><p>ヘッダーに続いて3データ行があり、商品IDの先頭ゼロや数値が正しいことを確認します。<code>SourceFile</code> 列は元のXMLファイル名です。不要なら保存前に「SourceFile」を外します。</p></div></li></ol>
+      <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="出力プレビュー画面を拡大"><img src="images/08-preview.png" alt="Excel出力の下部。プレビュー100行、XLSX保存、CSV保存、設定JSON保存のボタンと、練習用データ3行のプレビューが表示される。" width="984" height="688" loading="lazy"></button><figcaption>画面8｜保存前のプレビュー。「先頭3行」と内容を確認してから「XLSX保存」を押します。</figcaption></figure>
+      <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="XLSX保存完了画面を拡大"><img src="images/09-saved.png" alt="XLSX保存後の画面。下部の状況表示がXLSX保存完了になっている。" width="984" height="688" loading="lazy"></button><figcaption>画面9｜保存完了の表示を確認します。この画像は実際の出力処理後の画面です。保存先選択ダイアログ自体は撮影していません。</figcaption></figure>
+      <div class="callout tip"><div class="callout-icon" aria-hidden="true">✓</div><div><h3>複数XMLをまとめる・条件で絞る</h3><p>対象XMLを複数選び、「1シートに統合」「XMLごとに別シート」「XMLごとに別ファイル」を選べます。最初の練習では「レコード単位」「1シートに統合」「条件なし」のままにします。</p><p>条件を試す場合は「抽出条件」の左端へ <code>name</code>、比較方法を <code>equals</code>、その右へ <code>りんご</code> と入力し、「条件追加」→「プレビュー100行」で1行に絞られることを確認します。「条件をクリア」で戻せます。</p></div></div>
+      <p class="small-note">CSVは「CSV保存」から保存できます。数式のように見える文字列の先頭には安全のためアポストロフィが付きます。先頭ゼロや型を保ちたい場合は、文字列型にしてXLSXで保存してください。CSVは子シート出力に対応しません。</p>
+    </section>
+
+    <section id="save" class="content-section"><div class="section-heading"><span class="section-number">10</span><div><p class="section-kicker">Save &amp; Close</p><h2>設定と作業を保存・終了する</h2></div></div>
+      <p>次回へ残したい内容に応じて、保存方法を使い分けます。</p>
+      <div class="table-wrap"><table><thead><tr><th>残したいもの</th><th>使う操作</th><th>次回の再開方法</th></tr></thead><tbody><tr><td>出力した一覧</td><td>「Excel出力」→「XLSX保存」または「CSV保存」</td><td>保存先のファイルをExcel等で開きます。</td></tr><tr><td>出力の列・型・条件の設定</td><td>「Excel出力」→「設定JSON保存」</td><td>対象XMLを読み込み、「設定JSON読込」。基準パスと対象XMLを確認して再プレビューします。</td></tr><tr><td>読み込んだXMLの解析データ</td><td>「設定」→「作業ファイルを保存」</td><td>「設定」→「作業ファイルを開く」で <code>.xmlwork</code> を選びます。</td></tr></tbody></table></div>
+      <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="設定画面を拡大"><img src="images/10-settings.png" alt="設定タブ。作業ファイルを保存、作業ファイルを開く、すべての作業データと設定を削除、技術ログをJSON保存のボタン。" width="984" height="688" loading="lazy"></button><figcaption>画面10｜作業ファイルは解析済みの値を含みます。会社の保管ルールに従って管理してください。</figcaption></figure>
+      <div class="callout warning"><div class="callout-icon" aria-hidden="true">!</div><div><h3>作業ファイルと出力設定は別に保存します</h3><p>作業ファイルはXMLの解析データを保存します。出力列や条件を次回も使う場合は、<strong>設定JSONも別途保存</strong>してください。作業ファイルを開くと、現在の解析データは置き換わります。</p></div></div>
+      <p>必要な保存が終わったら、ウインドウ右上の「×」で終了します。処理中の場合は中断と後片付けの完了を待ちます。通常終了すると一時作業データは削除されます。明示的に保存したXLSX・CSV・JSON・作業ファイルは残ります。</p>
+      <p class="small-note">「すべての作業データと設定を削除」は現在の読込内容・出力設定等を初期化します。ディスクに保存済みのファイルは削除しません。異常終了時には一時フォルダが残る場合があります。</p>
+    </section>
+
+    <section id="verification" class="content-section"><div class="section-heading"><span class="section-number">11</span><div><p class="section-kicker">Verification</p><h2>完了確認</h2></div></div>
+      <p>練習が終わったら、次の項目を確認してください。チェック状態はこのページを再読込するとリセットされます。</p><div class="checklist-grid"><article><h3>画面・結果</h3><label><input type="checkbox"> EXEから起動でき、XMLを2ファイル読み込めた</label><label><input type="checkbox"> 構造ビューでitemとidを確認できた</label><label><input type="checkbox"> 比較で単価と在庫数の2箇所の変更を確認できた</label><label><input type="checkbox"> プレビューで変更前の3行を確認できた</label></article><article><h3>保存・終了</h3><label><input type="checkbox"> XLSXを保存し、実際に開いて3行と値を確認した</label><label><input type="checkbox"> 商品IDの001など先頭ゼロが残っている</label><label><input type="checkbox"> 必要な設定JSON・作業ファイルを保存した</label><label><input type="checkbox"> アプリを通常の手順で終了した</label></article></div>
+      <p class="small-note">アプリはWindows Server 2022で機能・GUIテスト36件と同梱EXEの起動を検証済みです。Windows版Microsoft Excelそのものでの修復警告・再保存は未確認のため、利用環境で必ず出力を確認してください。</p>
+    </section>
+
+    <section id="troubleshooting" class="content-section"><div class="section-heading"><span class="section-number">12</span><div><p class="section-kicker">Troubleshooting</p><h2>困ったとき</h2></div></div>
+      <div class="faq-list">
+        <details><summary>EXEが見つからない／Pythonのインストールを求められる</summary><div><p>ソース版を取得している可能性があります。<code>enterprise-xml-analyzer-windows-x64-python3146.zip</code> を取得し、外側・内側のZIPをすべて展開します。Windows実行版はPythonを同梱しています。利用者が <code>run.py</code> を直接開く必要はありません。</p></div></details>
+        <details><summary>EXEを開いても起動しない／DLLがないと表示される</summary><div><p>ZIP内から直接実行していないか、<code>_internal</code> がEXEと同じ場所にあるか確認します。配布ZIPを新しいローカルフォルダへ再展開して試します。会社の実行制限やウイルス対策による隔離も配布担当者へ確認してください。</p></div></details>
+        <details><summary>Windowsの警告や会社の管理機能で実行が止まる</summary><div><p>EXEは未署名です。セキュリティ機能を無効にせず、会社の承認手順に従ってください。管理者権限での実行を標準手順にはしません。</p></div></details>
+        <details><summary>XMLを読み込めない／XML_PARSE・DTD・LIMITなどが表示される</summary><div><p>XMLの構文・文字コード・ファイルの読み取り権限を確認します。UTF-8／UTF-16に対応します。DTD・外部実体を含むXMLは受け付けません。深さ256や単一テキスト1Mi文字等の上限に達した場合は、元データの担当者へ相談してください。上限を避けるための無断編集はしないでください。</p></div></details>
+        <details><summary>比較できない／変更が想定と違う／「曖昧」が出る</summary><div><p>AとBに異なるファイルを選んでいるか確認します。初回は「完全比較」で試します。キー属性の重複や不足、空白・順序・コメントのオプションでも結果が変わります。画面の設定と対象ファイル名を控え、実際の要素と詳細を確認してください。</p></div></details>
+        <details><summary>Excelの行が多すぎる／少ない／空欄になる</summary><div><p>対象XMLの選択、1行の基準パス、列の相対パス、出力ON/OFF、抽出条件を確認します。練習では変更前だけを選び、<code>/catalog/item</code> を基準にします。パスや列設定は対象XMLの構造に合っている必要があります。</p></div></details>
+        <details><summary>列を編集したのに結果へ反映されない</summary><div><p>表の該当行を選んで編集し、「列へ反映」を押してから再度プレビューします。プレビューを実行する前の表示は自動更新されません。</p></div></details>
+        <details><summary>「XLSX保存」など下のボタンが見えない</summary><div><p>ウインドウを最大化し、「Excel出力」の右端の縦スクロールバーを下へ移動します。横幅が足りない場合も最大化して操作してください。</p></div></details>
+        <details><summary>保存できない／disk I/O error／処理が遅い</summary><div><p>空き容量、保存先への書き込み権限、出力ファイルをExcelで開いたままにしていないかを確認します。大きなXMLは一時作業領域も使用します。共有フォルダで失敗する場合は、許可されたローカルフォルダへの保存を試し、会社の担当者へ権限を確認してください。</p></div></details>
+        <details><summary>全データ削除・終了に時間がかかる</summary><div><p>大量データではSQLiteの整理に時間がかかります。中断・終了操作を連打せず待ってください。100万要素後の削除で約1分かかった検証例があります。</p></div></details>
+      </div>
+      <div class="callout info"><div class="callout-icon" aria-hidden="true">i</div><div><h3>解決しない場合</h3><p>配布担当者へ、Windowsの種類、アプリの版、対象ファイル名、操作、表示メッセージを伝えてください。「設定」→「技術ログをJSON保存」も利用できます。XMLの実データや作業ファイルを送る場合は、送付先と内容を会社のルールに従って確認してください。</p></div></div>
+      <p class="small-note">配布担当者向け: <a href="https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions">GitHubのビルド一覧</a>はアクセス権を持つ利用者のみ閲覧できます。Actionsの配布物は保存期限があるため、期限切れの場合は担当者へ再配布を依頼してください。</p>
+    </section>
+    <footer class="page-footer"><p>Enterprise XML Analyzer · Windows版ユーザー手順書 · v2.0</p><p>更新: 2026/10/25 · 画面は架空の練習用データを使用</p></footer>
+  </main>
+  <button id="back-to-top" class="back-to-top" type="button" aria-label="ページ上部へ戻る"><span aria-hidden="true">↑</span> トップへ戻る</button>
+  <dialog id="image-viewer" aria-labelledby="image-viewer-title"><div class="viewer-bar"><p id="image-viewer-title">画面の拡大表示</p><button id="close-viewer" type="button">閉じる（Esc）</button></div><img id="viewer-image" alt=""><p class="viewer-note">横幅が足りない場合は画像の下の横スクロールで確認できます。</p></dialog>
+</body>
+</html>
