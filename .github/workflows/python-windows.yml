@@ -48,3 +48,12 @@ jobs:
             artifacts/python-selftest-*.png
           if-no-files-found: error
           retention-days: 14
+      - name: Capture Windows user guide screens
+        run: python scripts/capture_guide_python.py
+      - name: Upload user guide screens
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: python-user-guide-screens
+          path: artifacts/python-guide/
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<catalog>
+  <item id="001"><name>りんご</name><price>120</price><stock>30</stock></item>
+  <item id="002"><name>みかん</name><price>80</price><stock>50</stock></item>
+  <item id="003"><name>ぶどう</name><price>350</price><stock>12</stock></item>
+</catalog>
