@@ -117,6 +117,8 @@ class GuiTests(unittest.TestCase):
         self.app.differences.selection_set(self.app.differences.get_children()[0])
         self.app.jump_difference("b")
         self.assertEqual(self.app.selected["text"], "new")
+        self.app.search_text.set("PRIVATE_QUERY")
+        self.app.filter_value.set("PRIVATE_FILTER")
         self.app.clear_workspace()
         self.wait()
         self.assertEqual(self.app.files, [])
@@ -125,6 +127,8 @@ class GuiTests(unittest.TestCase):
         self.assertIsNone(self.app.graph.document_root)
         self.assertEqual(self.app.detail.get("1.0", "end").strip(), "")
         self.assertEqual(self.app.preview_text.get("1.0", "end").strip(), "")
+        self.assertEqual(self.app.search_text.get(), "")
+        self.assertEqual(self.app.filter_value.get(), "")
 
     def test_worker_disables_controls_and_cancel_cleans_database(self):
         path = self.base / "cancel.xml"

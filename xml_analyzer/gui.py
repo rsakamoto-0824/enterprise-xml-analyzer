@@ -947,6 +947,20 @@ class Application:
                     if isinstance(child, tk.Toplevel):
                         child.destroy()
                 self.apply_template(Template())
+                for variable in (self.search_text, self.filter_path, self.filter_value, self.filter_max,
+                                 self.column_fields["path"], self.column_fields["name"]):
+                    variable.set("")
+                for key, value in (("type", "string"), ("repeat", "join"), ("missing", "blank")):
+                    self.column_fields[key].set(value)
+                self.search_target.set("要素名")
+                self.search_exact.set(False)
+                self.search_case.set(False)
+                self.filter_op.set("equals")
+                self.diff_filter.set("すべて")
+                self.compare_key.set("id")
+                self.compare_mode.set("完全比較")
+                for key, variable in self.compare_flags.items():
+                    variable.set(key == "trim")
                 self.after_delete()
                 clear_tree(self.search_results)
                 self.diff_detail.delete("1.0", "end")
