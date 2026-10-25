@@ -2,6 +2,7 @@ import ctypes
 import json
 from pathlib import Path
 import struct
+import sqlite3
 import sys
 import tempfile
 import time
@@ -135,6 +136,15 @@ class GuiTests(unittest.TestCase):
         self.assertEqual(self.app.files, [])
         self.assertNotIn("disabled", self.app.file_picker.state())
         self.assertIn("CANCELLED", self.app.status.get())
+
+    def test_storage_failure_does_not_stop_the_gui_event_pump(self):
+        self.root.after_cancel(self.app.poll_id)
+        self.app.messages.put(("done", ("test", None, None, time.monotonic())))
+        with patch.object(self.app.store, "files", side_effect=sqlite3.OperationalError("disk I/O error")):
+            self.app.poll()
+        self.assertIn("PROCESS_ERROR", self.app.status.get())
+        self.assertIsNotNone(self.app.poll_id)
+        self.root.update()
 
     @unittest.skipUnless(sys.platform == "win32", "native WM_DROPFILES is Windows only")
     def test_windows_native_drop_unicode_paths(self):

@@ -45,11 +45,11 @@ class Store:
             yield cached
             return
         db = sqlite3.connect(self.path, timeout=30)
-        db.row_factory = sqlite3.Row
-        db.execute("PRAGMA foreign_keys=ON")
-        db.execute("PRAGMA trusted_schema=OFF")
-        db.execute("PRAGMA cache_size=-8192")
         try:
+            db.row_factory = sqlite3.Row
+            db.execute("PRAGMA foreign_keys=ON")
+            db.execute("PRAGMA trusted_schema=OFF")
+            db.execute("PRAGMA cache_size=-8192")
             with db:
                 yield db
         finally:

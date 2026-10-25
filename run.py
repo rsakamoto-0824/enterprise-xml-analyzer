@@ -30,8 +30,10 @@ def main(argv=None):
     try:
         if len(argv) == 2 and argv[0] == "--self-test":
             from xml_analyzer.selftest import self_test
-            result = self_test()
-            Path(argv[1]).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+            target = Path(argv[1]).resolve()
+            target.parent.mkdir(parents=True, exist_ok=True)
+            result = self_test(screenshot_dir=target.parent)
+            target.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
             return 0
         if argv:
             show_startup_error("起動引数が不正です。引数なしで起動してください。")

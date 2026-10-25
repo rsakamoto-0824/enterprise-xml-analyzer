@@ -15,9 +15,10 @@ from .gui import Application
 from .models import Column, DiffOptions, Template
 from .parser import parse_file
 from .writers import write_xlsx
+from .visualization import save_windows_canvas_png
 
 
-def self_test():
+def self_test(screenshot_dir=None):
     # Deny network access in the frozen smoke test as well as in source tests.
     original_connect = socket.socket.connect
     def deny(*args, **kwargs):
@@ -59,11 +60,25 @@ def self_test():
             svg = base / "graph.svg"
             app.graph.export_svg(svg)
             assert '<svg' in svg.read_text(encoding="utf-8")
+            screenshots = []
+            if sys.platform == "win32" and screenshot_dir:
+                root.deiconify()
+                app.jump_to_node(app.store.node(ids[0], 2))
+                app.tabs.select(app.pages["構造ビュー"])
+                root.update()
+                for name, widget in (("python-selftest-window.png", root), ("python-selftest-graph.png", app.graph.canvas)):
+                    if widget is app.graph.canvas:
+                        app.tabs.select(app.pages["グラフ"])
+                        root.update()
+                    destination = Path(screenshot_dir) / name
+                    save_windows_canvas_png(widget, destination)
+                    assert destination.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
+                    screenshots.append(name)
             info = {"status": "PASS", "python": platform.python_version(), "platform": sys.platform,
                     "architecture": platform.machine(), "tk": root.tk.call("info", "patchlevel"),
                     "frozen": bool(getattr(sys, "frozen", False)), "files": 2,
                     "modified": result["counts"]["MODIFIED"], "xlsx_rows": exported["rows"],
-                    "gui": "Tk application, background import, tree and canvas", "network": "blocked"}
+                    "gui": "Tk application, background import, tree and canvas", "network": "blocked", "screenshots": screenshots}
             app.finish_close()
             app, root = None, None
             return info

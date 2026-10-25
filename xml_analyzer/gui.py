@@ -152,6 +152,13 @@ class Application:
         return True
 
     def poll(self):
+        try:
+            self.poll_messages()
+        except Exception as error:
+            self.report(error)
+            self.poll_id = self.root.after(100, self.poll)
+
+    def poll_messages(self):
         latest_progress = None
         for _ in range(500):
             try:

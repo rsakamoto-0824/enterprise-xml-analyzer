@@ -32,5 +32,6 @@ jobs:
             artifacts/enterprise-xml-analyzer-windows-x64-python3146.zip
             artifacts/python-windows-frozen-selftest.json
             artifacts/python-windows-performance.json
+            artifacts/python-selftest-*.png
           if-no-files-found: error
           retention-days: 14
