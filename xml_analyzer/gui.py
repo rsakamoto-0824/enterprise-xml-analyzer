@@ -104,12 +104,17 @@ class Application:
         self._settings_page()
         footer = ttk.Frame(root, padding=(16, 6))
         footer.pack(fill="x")
-        ttk.Label(footer, textvariable=self.status).pack(side="left", fill="x", expand=True)
+        ttk.Label(footer, textvariable=self.status, wraplength=760).pack(side="left", fill="x", expand=True)
         self.cancel_button = ttk.Button(footer, text="中断", command=self.cancel, state="disabled")
         self.cancel_button.pack(side="right")
         self.progress = ttk.Progressbar(root, mode="determinate")
         self.progress.pack(fill="x", padx=16, pady=(0, 8))
         ttk.Label(root, text="Python 3.14.6 ｜ 追加パッケージ不要 ｜ 外部通信なし ｜ 保存は明示操作のみ", style="Muted.TLabel", padding=(16, 0, 16, 8)).pack(anchor="w")
+        # Reserve status/cancel space before giving the notebook the remaining height.
+        self.tabs.pack_forget()
+        footer.pack_configure(side="bottom")
+        self.progress.pack_configure(side="bottom")
+        self.tabs.pack(fill="both", expand=True, padx=14, pady=12)
         self.uninstall_drop = install_file_drop(root, self.import_files)
         self.poll_id = root.after(50, self.poll)
 

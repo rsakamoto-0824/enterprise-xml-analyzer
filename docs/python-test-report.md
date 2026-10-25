@@ -6,8 +6,8 @@
 
 | 環境 | 結果 |
 |---|---|
-| Windows Server 2022 x64 / CPython 3.14.6 / Tcl/Tk 8.6.15 | 機能とGUIの35件が成功。WindowsネイティブのWM_DROPFILESで日本語・空白パスを確認 |
-| macOS 27.0.1 arm64 / CPython 3.14.6 / Tcl/Tk 9.0.4 | 35件中34件成功、Windows専用ドロップ1件をスキップ |
+| Windows Server 2022 x64 / CPython 3.14.6 / Tcl/Tk 8.6.15 | 機能とGUIの36件が成功。WindowsネイティブのWM_DROPFILESで日本語・空白パスを確認 |
+| macOS 27.0.1 arm64 / CPython 3.14.6 / Tcl/Tk 9.0.4 | 36件中35件成功、Windows専用ドロップ1件をスキップ |
 | Windows同梱EXE | Python 3.14.6を同梱。日本語・空白を含むフォルダ、PATHをSystem32だけにした環境、無効なPYTHONHOME/PYTHONPATHの状態でも自己検証成功 |
 | 同梱EXE自己検証 | Tk画面の生成、背景スレッドで2ファイル読込、変更1件検出、XLSX4行生成、ツリー・グラフ・SVGを確認。通常のTCP接続を禁止した状態で実施 |
 | Windows PNG | Windows GDIによる画面とグラフのPNG保存に成功。生成画像を目視確認 |

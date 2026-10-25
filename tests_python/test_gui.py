@@ -170,6 +170,7 @@ class GuiTests(unittest.TestCase):
         top = self.app.export_scroll.winfo_rooty()
         self.assertGreaterEqual(button.winfo_rooty(), top)
         self.assertLess(button.winfo_rooty() + button.winfo_height(), top + self.app.export_scroll.winfo_height())
+        self.assertLessEqual(self.app.cancel_button.winfo_rooty() + self.app.cancel_button.winfo_height(), self.root.winfo_rooty() + self.root.winfo_height())
 
     @unittest.skipUnless(sys.platform == "win32", "native WM_DROPFILES is Windows only")
     def test_windows_native_drop_unicode_paths(self):
