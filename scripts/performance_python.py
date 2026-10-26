@@ -16,6 +16,7 @@ from xml_analyzer.comparison import compare, search
 from xml_analyzer.extraction import extract
 from xml_analyzer.models import Column, DiffOptions, Template
 from xml_analyzer.parser import parse_file
+from xml_analyzer.simple_export import all_element_rows, simple_template
 from xml_analyzer.storage import Store
 from xml_analyzer.visualization import Graph
 from xml_analyzer.writers import write_csv, write_xlsx
@@ -121,6 +122,16 @@ def main():
                     row[format + "_seconds"] = time.monotonic() - started
                     row[format + "_rows"] = saved["rows"]
                     row[format + "_bytes"] = saved["bytes"]
+            if scale in ("100", "million"):
+                started = time.monotonic()
+                all_rows = all_element_rows(store)
+                saved = write_xlsx(base / "all-elements.xlsx", all_rows, simple_template())
+                row["simple_export_seconds"] = time.monotonic() - started
+                # The 100MiB comparison case has loaded both synthetic XMLs.
+                expected_rows = expected * (2 if scale == "100" else 1)
+                assert saved["rows"] == expected_rows
+                row["simple_export_rows"] = saved["rows"]
+                row["simple_export_bytes"] = saved["bytes"]
             started = time.monotonic()
             store.clear()
             row["cleanup_seconds"] = time.monotonic() - started

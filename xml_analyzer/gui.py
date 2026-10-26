@@ -15,6 +15,7 @@ from .extraction import candidate_columns, difference_rows, extract, preview
 from .models import (AppError, Cancelled, Column, DIFF_COLORS, DIFF_LABELS, DIFF_TYPES,
                      DiffOptions, MAX_VISIBLE_NODES, PAGE_SIZE, Task, Template)
 from .parser import parse_file
+from .simple_export import all_element_rows, simple_template
 from .storage import Store
 from .visualization import Graph, xml_fragment
 from .windows import install_file_drop
@@ -246,6 +247,7 @@ class Application:
         bar.pack(fill="x", pady=12)
         ttk.Button(bar, text="XMLファイルを選択", command=self.pick_files).pack(side="left", padx=3)
         ttk.Button(bar, text="選択ファイルを削除", command=self.delete_selected).pack(side="left", padx=3)
+        ttk.Button(bar, text="全要素をExcel保存", command=self.export_all_elements).pack(side="left", padx=(18, 3))
         self.file_table = make_table(page, ["ファイル", "サイズ", "要素数", "深さ", "文字コード", "解析秒"], {"ファイル": 400})
         self.file_table.bind("<<TreeviewSelect>>", self.select_from_table)
 
@@ -626,6 +628,14 @@ class Application:
 
     def _export_page(self):
         container = self.pages["Excel出力"]
+        simple = ttk.LabelFrame(container, text="簡単出力モード", padding=8)
+        simple.pack(fill="x", pady=(0, 10))
+        ttk.Label(simple, text="読み込み済みの全XMLを、1要素＝1行で出力します。列・条件の設定は不要です。",
+                  wraplength=900).pack(anchor="w")
+        self.simple_export_button = ttk.Button(simple, text="全要素をExcel保存", command=self.export_all_elements)
+        self.simple_export_button.pack(anchor="w", pady=(5, 0))
+        ttk.Label(container, text="詳細出力：対象XML・列・条件を指定する場合は、以下を設定します。",
+                  style="Muted.TLabel").pack(anchor="w", pady=(0, 4))
         scroll = ttk.Scrollbar(container, orient="vertical")
         scroll.pack(side="right", fill="y")
         self.export_scroll = tk.Canvas(container, highlightthickness=0, yscrollcommand=scroll.set)
@@ -849,6 +859,27 @@ class Application:
             self.preview_text.insert("end", "該当するレコードがありません。基準パスと条件を確認してください。")
         elif all(all(v is None or v == "" for v in row.cells[int(self.template.source_file):]) for row in rows):
             self.preview_text.insert("end", "\n警告: プレビューで抽出項目の値が見つかりません。設定したパスを確認してください。")
+
+    def export_all_elements(self):
+        if self.task:
+            return
+        files = self.store.files()
+        if not files:
+            self.report(AppError("FILES_EMPTY: 先にXMLファイルを読み込んでください。"))
+            return
+        target = filedialog.asksaveasfilename(title="簡単出力：全XMLの全要素をExcel保存",
+                                            defaultextension=".xlsx", filetypes=[("Excelブック", "*.xlsx")],
+                                            initialfile="xml-all-elements.xlsx")
+        if not target:
+            return
+        if Path(target).suffix.lower() != ".xlsx":
+            target += ".xlsx"
+        elements = sum(file["info"]["elements"] for file in files)
+
+        def done(result):
+            self.status.set(f'簡単出力 · 完了（{len(files):,}ファイル・{elements:,}要素・{result["rows"]:,}行）')
+
+        self.run("簡単出力", lambda task: write_xlsx(target, all_element_rows(self.store, task), simple_template(), task), done)
 
     def export_output(self, format):
         if self.task:

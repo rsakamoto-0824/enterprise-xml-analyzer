@@ -16,6 +16,7 @@ from xml_analyzer.extraction import (OutputRow, candidate_columns, convert, diff
                                      extract, preview, values_for)
 from xml_analyzer.models import AppError, Cancelled, Column, DiffOptions, Task, Template
 from xml_analyzer.parser import parse_file
+from xml_analyzer.simple_export import SIMPLE_HEADERS, all_element_rows, simple_template
 from xml_analyzer.storage import Store
 from xml_analyzer.visualization import xml_fragment
 from xml_analyzer.writers import write_csv, write_xlsx
@@ -38,6 +39,74 @@ class EngineTests(unittest.TestCase):
 
     def template(self, path="/r/n", *columns):
         return Template(record_path=path, columns=list(columns) or [Column("@id", "id"), Column("v", "値")])
+
+    def test_simple_export_includes_all_elements_and_files_in_document_order(self):
+        a = self.parse('<r>前<n id="001">中<![CDATA[😀]]></n>後<empty/><n id="002"/><!--注釈--><?test value?></r>')
+        b = self.parse('<r xmlns:p="urn:test"><p:n p:id="003">=1+1</p:n></r>')
+        rows = [dict(zip(row.headers, row.cells)) for row in all_element_rows(self.store)]
+        self.assertEqual(len(rows), a["info"]["elements"] + b["info"]["elements"])
+        self.assertEqual([r["要素名"] for r in rows], ["r", "n", "empty", "n", "r", "p:n"])
+        self.assertEqual(rows[0]["テキスト"], "前後")
+        self.assertEqual(rows[1]["テキスト"], "中😀")
+        self.assertEqual(rows[2]["テキスト"], "")
+        self.assertEqual(rows[3]["要素パス"], "/r[1]/n[2]")
+        self.assertEqual(rows[1]["親要素番号"], rows[0]["要素番号"])
+        self.assertEqual(rows[0]["階層"], 0)
+        self.assertNotEqual(rows[0]["ファイルID"], rows[-1]["ファイルID"])
+        self.assertEqual(rows[0]["元ファイル"], rows[-1]["元ファイル"])
+        self.assertEqual(rows[-1]["名前空間"], "urn:test")
+        self.assertEqual(json.loads(rows[-1]["属性(JSON)"]), {"{urn%3Atest}id": "003"})
+        self.assertEqual(rows[-1]["テキスト"], "=1+1")
+
+    def test_simple_export_splits_long_values_losslessly_and_writes_safe_xlsx(self):
+        text = "a" * 32766 + "😀" + "b" * 40000
+        attribute = "😀" * 20000
+        namespace = "u" * 40000
+        source = self.parse(f'<r xmlns:p="{namespace}"><p:n id="001" a="{attribute}">{text}</p:n><v>=1+1</v></r>')
+        rows = list(all_element_rows(self.store))
+        child = [dict(zip(r.headers, r.cells)) for r in rows if r.cells[5] == "p:n" or r.cells[2] == 2]
+        self.assertGreater(len(child), 1)
+        self.assertEqual([r["分割番号"] for r in child], list(range(1, len(child) + 1)))
+        for key, expected in (("テキスト", text), ("名前空間", namespace), ("要素名", "p:n"), ("要素パス", "/r[1]/p:n[1]")):
+            self.assertEqual("".join(r[key] for r in child), expected)
+        self.assertEqual(json.loads("".join(r["属性(JSON)"] for r in child)), {"id": "001", "a": attribute})
+        self.assertEqual(sum(r.cells[-1] == 1 for r in rows), source["info"]["elements"])
+        for r in rows:
+            for cell in r.cells:
+                if isinstance(cell, str):
+                    self.assertLessEqual(len(cell.encode("utf-16-le")) // 2, 32767)
+        target = self.base / "all.xlsx"
+        result = write_xlsx(target, iter(rows), replace(simple_template(), sheet_rows=2))
+        self.assertEqual(result["rows"], len(rows))
+        self.assertGreater(result["sheets"], 1)
+        with zipfile.ZipFile(target) as z:
+            self.assertIsNone(z.testzip())
+            for name in z.namelist():
+                if name.endswith(".xml"):
+                    tree = ET.fromstring(z.read(name))
+                    self.assertEqual(tree.findall('.//{*}f'), [])
+
+    def test_simple_export_is_not_limited_by_tree_or_preview(self):
+        count = 10050
+        self.parse('<r>' + '<n/>' * count + '</r>')
+        self.assertEqual(sum(1 for _ in all_element_rows(self.store)), count + 1)
+
+    def test_simple_export_empty_cancel_and_limit_preserve_existing_file(self):
+        with self.assertRaisesRegex(AppError, "FILES_EMPTY"):
+            list(all_element_rows(self.store))
+        self.parse('<r>' + '<n/>' * 300 + '</r>')
+        target = self.base / "existing.xlsx"
+        target.write_bytes(b"original")
+        task = Task(progress=lambda *args: task.cancel.set())
+        with self.assertRaises(Cancelled):
+            write_xlsx(target, all_element_rows(self.store, task), simple_template(), task)
+        self.assertEqual(target.read_bytes(), b"original")
+        with patch("xml_analyzer.writers.MAX_EXPORT_ROWS", 2):
+            with self.assertRaisesRegex(AppError, "EXPORT_LIMIT"):
+                write_xlsx(target, all_element_rows(self.store), simple_template())
+        self.assertEqual(target.read_bytes(), b"original")
+        self.assertEqual(list(self.base.glob(".xml-analyzer-*.part")), [])
+        self.store.clear()
 
     def test_namespaces_unicode_and_chunk_boundaries(self):
         text = '<r xmlns="urn:root" xmlns:p="urn:p"><p:n p:id="001">日本語😀<![CDATA[<&]]><!--c--><?test p?></p:n></r>'

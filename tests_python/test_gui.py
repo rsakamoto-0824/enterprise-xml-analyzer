@@ -9,6 +9,8 @@ import time
 import tkinter as tk
 import unittest
 from unittest.mock import patch
+from xml.etree import ElementTree as ET
+import zipfile
 
 from xml_analyzer.gui import Application
 from xml_analyzer.models import Column, Template
@@ -79,6 +81,38 @@ class GuiTests(unittest.TestCase):
             self.app.export_output("xlsx")
         self.wait()
         self.assertTrue(target.is_file())
+
+    def test_simple_export_uses_every_file_and_ignores_detailed_settings(self):
+        self.load('<r><n id="001">=1+1</n><empty/></r>', 'a.xml')
+        self.load('<root><value>日本語</value></root>', 'b.xml')
+        self.app.template = Template(record_path="/does-not-exist", columns=[], filters=[{"path": ".", "op": "equals", "value": "no-match"}])
+        original = self.app.template.to_json()
+        self.app.export_files.selection_clear(0, "end")
+        self.app.export_files.selection_set(1)
+        target = self.base / "全要素"
+        with patch("xml_analyzer.gui.filedialog.asksaveasfilename", return_value=str(target)):
+            self.app.simple_export_button.invoke()
+        self.assertIsNotNone(self.app.task)
+        self.wait()
+        self.assertEqual(self.app.template.to_json(), original)
+        self.assertIn("2ファイル・5要素・5行", self.app.status.get())
+        with zipfile.ZipFile(target.with_suffix('.xlsx')) as z:
+            tree = ET.fromstring(z.read("xl/worksheets/sheet1.xml"))
+            self.assertEqual(len(tree.findall('.//{*}row')), 6)
+            self.assertEqual(tree.findall('.//{*}f'), [])
+            text = z.read("xl/worksheets/sheet1.xml").decode()
+            for value in ('a.xml', 'b.xml', '001', '=1+1', '日本語', 'empty'):
+                self.assertIn(value, text)
+
+    def test_simple_export_requires_xml_and_allows_save_dialog_cancel(self):
+        with patch("xml_analyzer.gui.filedialog.asksaveasfilename") as choose:
+            self.app.export_all_elements()
+            choose.assert_not_called()
+        self.assertIn("FILES_EMPTY", self.app.status.get())
+        self.load()
+        with patch("xml_analyzer.gui.filedialog.asksaveasfilename", return_value=""):
+            self.app.export_all_elements()
+        self.assertIsNone(self.app.task)
 
     def test_paging_tree_graph_svg_and_search_jump(self):
         file_id = self.load('<r>' + '<n>value</n>' * 600 + '</r>')
@@ -171,6 +205,8 @@ class GuiTests(unittest.TestCase):
         self.assertGreaterEqual(button.winfo_rooty(), top)
         self.assertLess(button.winfo_rooty() + button.winfo_height(), top + self.app.export_scroll.winfo_height())
         self.assertLessEqual(self.app.cancel_button.winfo_rooty() + self.app.cancel_button.winfo_height(), self.root.winfo_rooty() + self.root.winfo_height())
+        self.assertGreater(self.app.simple_export_button.winfo_rooty(), self.root.winfo_rooty())
+        self.assertLess(self.app.simple_export_button.winfo_rooty() + self.app.simple_export_button.winfo_height(), self.app.export_scroll.winfo_rooty())
 
     @unittest.skipUnless(sys.platform == "win32", "native WM_DROPFILES is Windows only")
     def test_windows_native_drop_unicode_paths(self):

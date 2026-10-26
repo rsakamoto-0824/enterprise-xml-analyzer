@@ -1,7 +1,7 @@
 name: Python 3.14.6 Windows standalone
 on:
   push:
-    branches: [main, 'feat/python-standalone-3146']
+    branches: [main, 'feat/python-standalone-3146', 'feat/python-simple-export']
     paths: ['xml_analyzer/**', 'tests_python/**', '*.py', '*.cmd', 'scripts/*python.py', 'pyproject.toml', '.python-version', 'requirements-build-windows.txt', '.github/workflows/python-windows.yml']
   workflow_dispatch:
 permissions:
@@ -34,7 +34,7 @@ jobs:
         run: |
           import os, subprocess
           paths = subprocess.check_output(['git', 'diff-tree', '--root', '--no-commit-id', '--name-only', '-r', 'HEAD'], text=True).splitlines()
-          engine = {'xml_analyzer/parser.py', 'xml_analyzer/storage.py', 'xml_analyzer/comparison.py', 'xml_analyzer/extraction.py', 'xml_analyzer/writers.py', 'xml_analyzer/models.py', 'scripts/performance_python.py'}
+          engine = {'xml_analyzer/parser.py', 'xml_analyzer/storage.py', 'xml_analyzer/comparison.py', 'xml_analyzer/extraction.py', 'xml_analyzer/simple_export.py', 'xml_analyzer/writers.py', 'xml_analyzer/models.py', 'scripts/performance_python.py'}
           required = os.environ['GITHUB_EVENT_NAME'] == 'workflow_dispatch' or bool(engine.intersection(paths))
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as out:
               out.write('performance=' + str(required).lower() + '\n')

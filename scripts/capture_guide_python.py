@@ -53,6 +53,13 @@ def main():
         app.import_files([str(SAMPLES / name) for name in ("sample-before.xml", "sample-after.xml")])
         wait()
         capture("02-loaded", "XML読込")
+        with tempfile.TemporaryDirectory(prefix="xml-guide-simple-") as folder:
+            target = Path(folder) / "all-elements.xlsx"
+            with patch("xml_analyzer.gui.filedialog.asksaveasfilename", return_value=str(target)):
+                app.export_all_elements()
+            wait()
+            assert app.last_result["rows"] == 26
+            capture("11-simple-export", "Excel出力")
         before = next(f["id"] for f in app.files if f["name"] == "sample-before.xml")
         app.set_file(before)
         item = next(n for n in app.store.nodes(before, path="/catalog/item"))
@@ -106,7 +113,7 @@ def main():
         (OUTPUT / "capture.json").write_text(json.dumps({
             "platform": platform.platform(), "python": platform.python_version(),
             "tk": root.tk.call("info", "patchlevel"), "screenshots": captured,
-            "sample_rows": 3, "comparison_counts": counts,
+            "sample_rows": 3, "simple_export_rows": 26, "comparison_counts": counts,
             "note": "Unedited real Tk application captures; synthetic samples only. Save chooser substituted, actual XLSX writer executed."
         }, ensure_ascii=False, indent=2), encoding="utf-8")
     finally:

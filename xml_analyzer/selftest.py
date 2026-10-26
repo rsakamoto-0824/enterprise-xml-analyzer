@@ -8,6 +8,7 @@ import tempfile
 import time
 import tkinter as tk
 import zipfile
+from unittest.mock import patch
 
 from .comparison import compare
 from .extraction import extract
@@ -54,6 +55,19 @@ def self_test(screenshot_dir=None):
             with zipfile.ZipFile(workbook) as archive:
                 text = archive.read("xl/worksheets/sheet1.xml").decode("utf-8")
                 assert '<f>' not in text and '001' in text and 'りんご' in text
+            simple_workbook = base / "all-elements.xlsx"
+            with patch("xml_analyzer.gui.filedialog.asksaveasfilename", return_value=str(simple_workbook)):
+                app.export_all_elements()
+            deadline = time.monotonic() + 30
+            while app.task:
+                root.update()
+                if time.monotonic() > deadline:
+                    raise AssertionError("Simple export did not complete")
+                time.sleep(0.01)
+            assert app.last_result["rows"] == 10
+            with zipfile.ZipFile(simple_workbook) as archive:
+                text = archive.read("xl/worksheets/sheet1.xml").decode("utf-8")
+                assert '<f>' not in text and '001' in text and '全要素' in archive.read('xl/workbook.xml').decode()
             app.set_file(ids[0])
             root.update()
             assert len(app.graph.points) > 0
@@ -74,10 +88,15 @@ def self_test(screenshot_dir=None):
                     save_windows_canvas_png(widget, destination)
                     assert destination.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
                     screenshots.append(name)
+                app.tabs.select(app.pages["Excel出力"])
+                root.update()
+                name = "python-selftest-simple.png"
+                save_windows_canvas_png(root, Path(screenshot_dir) / name)
+                screenshots.append(name)
             info = {"status": "PASS", "python": platform.python_version(), "platform": sys.platform,
                     "architecture": platform.machine(), "tk": root.tk.call("info", "patchlevel"),
                     "frozen": bool(getattr(sys, "frozen", False)), "files": 2,
-                    "modified": result["counts"]["MODIFIED"], "xlsx_rows": exported["rows"],
+                    "modified": result["counts"]["MODIFIED"], "xlsx_rows": exported["rows"], "simple_export_rows": 10,
                     "gui": "Tk application, background import, tree and canvas", "network": "blocked", "screenshots": screenshots}
             app.finish_close()
             app, root = None, None

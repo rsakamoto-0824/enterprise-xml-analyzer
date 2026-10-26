@@ -15,7 +15,7 @@
   <a class="skip-link" href="#main-content">本文へ移動</a>
   <button id="toc-toggle" class="toc-toggle" type="button" aria-controls="sidebar" aria-expanded="false">☰ 目次</button>
   <aside id="sidebar" class="sidebar" aria-label="目次">
-    <div class="sidebar-header"><p class="eyebrow">Windows Desktop · v2.0</p><p class="sidebar-title">Enterprise XML<br>Analyzer</p><p class="sidebar-subtitle">スクリーンショット付き操作手順書</p></div>
+    <div class="sidebar-header"><p class="eyebrow">Windows Desktop · v2.1</p><p class="sidebar-title">Enterprise XML<br>Analyzer</p><p class="sidebar-subtitle">スクリーンショット付き操作手順書</p></div>
     <nav><ol class="toc-list">
       <li><a href="#overview">01 目的と対象</a></li><li><a href="#prepare">02 展開したフォルダの確認</a></li><li><a href="#workflow">03 全体の流れ・練習用XML</a></li><li><a href="#launch">04 アプリを起動する</a></li><li><a href="#load">05 XMLを読み込む</a></li><li><a href="#tree">06 構造・検索を確認する</a></li><li><a href="#graph">07 グラフで見る</a></li><li><a href="#compare">08 2つのXMLを比較する</a></li><li><a href="#export">09 Excelへ出力する</a></li><li><a href="#save">10 設定と作業を保存・終了する</a></li><li><a href="#verification">11 完了確認</a></li><li><a href="#troubleshooting">12 困ったとき</a></li>
     </ol></nav>
@@ -23,7 +23,7 @@
   </aside>
   <div id="sidebar-overlay" class="sidebar-overlay" aria-hidden="true"></div>
   <main id="main-content" class="main-content">
-    <header class="hero"><div class="hero-content"><p class="eyebrow">User Guide · Python 3.14.6 Bundled</p><h1>Enterprise XML Analyzer<br><span>Windows版 操作手順書</span></h1><p class="hero-lead">ZIPを展開したところから、XMLの確認・比較・Excel保存まで。画面と同じ練習用データを使って、一通りの操作を試せます。</p><div class="hero-badges"><span>対象: Windows x64配布版</span><span>Pythonの追加インストール不要</span><span>更新: 2026/10/25</span></div></div></header>
+    <header class="hero"><div class="hero-content"><p class="eyebrow">User Guide · Python 3.14.6 Bundled</p><h1>Enterprise XML Analyzer<br><span>Windows版 操作手順書</span></h1><p class="hero-lead">ZIPを展開したところから、XMLの確認・比較・Excel保存まで。画面と同じ練習用データを使って、一通りの操作を試せます。</p><div class="hero-badges"><span>対象: Windows x64配布版</span><span>Pythonの追加インストール不要</span><span>更新: 2026/10/27</span></div></div></header>
 
     <section id="overview" class="content-section"><div class="section-heading"><span class="section-number">01</span><div><p class="section-kicker">Overview</p><h2>目的と対象</h2></div></div>
       <p>このアプリは、XMLファイルの中身を階層やグラフで確認し、2つのXMLの違いを調べ、必要な項目をExcel・CSVへ取り出すためのデスクトップアプリです。XML原本を直接編集する機能はありません。</p>
@@ -87,6 +87,12 @@
     </section>
 
     <section id="export" class="content-section"><div class="section-heading"><span class="section-number">09</span><div><p class="section-kicker">Excel Export</p><h2>必要な項目をExcelへ出力する</h2></div></div>
+      <h3 id="simple-export">設定なしで全部出力する：簡単出力モード</h3>
+      <ol class="numbered-steps"><li><div><strong>必要なXMLをすべて読み込みます。</strong><p>「XML読込」の一覧にある全ファイルが対象です。画面右上や詳細出力の選択状態、列や条件の設定には影響されません。</p></div></li><li><div><strong>「全要素をExcel保存」を押し、保存先を選びます。</strong><p>「XML読込」タブのボタン、または「Excel出力」タブ上部の「簡単出力モード」から実行できます。列やパスを設定する必要はありません。</p></div></li><li><div><strong>完了表示とExcelの内容を確認します。</strong><p>練習用XMLを2つとも読み込んだ場合は、親・空要素も含む全26要素を26行で保存します。詳細出力の「商品1件を1行」にする一覧とは行の単位が異なります。</p></div></li></ol>
+      <p>「全要素」シートには元ファイル、ファイルID、要素番号、親要素番号、階層、要素名、名前空間、要素パス、属性(JSON)、テキスト、分割番号の11列が並びます。ID・数値に見えるXML値も文字列として保持するため、先頭ゼロが残ります。階層の先頭は0です。</p>
+      <p>テキストは要素の直下にある文字列・CDATAです。子要素の値はその子の行に出力します。コメントとPIは出力対象の「要素」に含めません。1セルに収まらない値は続きの行へ分割し、切り捨てません。同じファイルIDと要素番号を分割番号順に並べ、要素名・名前空間・パス・属性・テキストの各列を連結すると元の値になります。先頭5列は続きの行にも繰り返します。</p>
+      <p class="small-note">1シートのデータ行上限で自動的にシートを分けます。合計200万行を超える場合は停止し、既存の保存先ファイルを保持します。対象を小さくする場合は、読み込み一覧から不要なXMLを外して再実行してください。</p>
+      <h3>必要な列を選びたい場合：詳細出力</h3>
       <h3>① 「1行」の単位を選ぶ</h3><ol class="numbered-steps"><li><div><strong>「構造ビュー」へ戻り、右上を変更前XMLにします。</strong><p>検索後は <code>price</code> などが選ばれていることがあります。左のツリーから商品1件を表す <code>item</code> を選び直します。</p></div></li><li><div><strong>「この要素を出力の1行にする」を押します。</strong><p>「Excel出力」へ移動し、「1行の基準となる要素パス」が <code>/catalog/item</code> になります。1つの <code>item</code> がExcelの1行になるため、変更前XMLから3行を出力します。</p></div></li><li><div><strong>左上「対象XML」で変更前だけを選びます。</strong><p>初期状態では複数のXMLが選ばれていることがあります。この練習では <code>sample-before.xml</code> を通常クリックして1つだけ選択します。複数選択はCtrlキーで操作します。</p></div></li></ol>
       <h3>② 列名と型を整える</h3><p>候補の列は自動で作られます。表の行をクリックして、その下の「列名」と型を変更し、<strong>必ず「列へ反映」</strong>を押します。次の4列を順に設定してください。</p>
       <div class="table-wrap"><table><caption>練習で使う列設定</caption><thead><tr><th>相対パス</th><th>列名</th><th>型</th><th>理由</th></tr></thead><tbody><tr><td><code>@id</code></td><td>商品ID</td><td><code>string</code></td><td>001の先頭ゼロを残します。</td></tr><tr><td><code>name</code></td><td>商品名</td><td><code>string</code></td><td>文字列として保存します。</td></tr><tr><td><code>price</code></td><td>単価</td><td><code>number</code></td><td>Excelで集計できる数値として保存します。</td></tr><tr><td><code>stock</code></td><td>在庫数</td><td><code>number</code></td><td>Excelで集計できる数値として保存します。</td></tr></tbody></table></div>
@@ -129,7 +135,7 @@
       <div class="callout info"><div class="callout-icon" aria-hidden="true">i</div><div><h3>解決しない場合</h3><p>配布担当者へ、Windowsの種類、アプリの版、対象ファイル名、操作、表示メッセージを伝えてください。「設定」→「技術ログをJSON保存」も利用できます。XMLの実データや作業ファイルを送る場合は、送付先と内容を会社のルールに従って確認してください。</p></div></div>
       <p class="small-note">配布担当者向け: <a href="https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions">GitHubのビルド一覧</a>はアクセス権を持つ利用者のみ閲覧できます。Actionsの配布物は保存期限があるため、期限切れの場合は担当者へ再配布を依頼してください。</p>
     </section>
-    <footer class="page-footer"><p>Enterprise XML Analyzer · Windows版ユーザー手順書 · v2.0</p><p>更新: 2026/10/25 · 画面は架空の練習用データを使用</p></footer>
+    <footer class="page-footer"><p>Enterprise XML Analyzer · Windows版ユーザー手順書 · v2.1</p><p>更新: 2026/10/27 · 画面は架空の練習用データを使用</p></footer>
   </main>
   <button id="back-to-top" class="back-to-top" type="button" aria-label="ページ上部へ戻る"><span aria-hidden="true">↑</span> トップへ戻る</button>
   <dialog id="image-viewer" aria-labelledby="image-viewer-title"><div class="viewer-bar"><p id="image-viewer-title">画面の拡大表示</p><button id="close-viewer" type="button">閉じる（Esc）</button></div><img id="viewer-image" alt=""><p class="viewer-note">横幅が足りない場合は画像の下の横スクロールで確認できます。</p></dialog>
