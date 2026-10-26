@@ -89,12 +89,13 @@
     <section id="export" class="content-section"><div class="section-heading"><span class="section-number">09</span><div><p class="section-kicker">Excel Export</p><h2>必要な項目をExcelへ出力する</h2></div></div>
       <h3 id="simple-export">設定なしで全部出力する：簡単出力モード</h3>
       <ol class="numbered-steps"><li><div><strong>必要なXMLをすべて読み込みます。</strong><p>「XML読込」の一覧にある全ファイルが対象です。画面右上や詳細出力の選択状態、列や条件の設定には影響されません。</p></div></li><li><div><strong>「全要素をExcel保存」を押し、保存先を選びます。</strong><p>「XML読込」タブのボタン、または「Excel出力」タブ上部の「簡単出力モード」から実行できます。列やパスを設定する必要はありません。</p></div></li><li><div><strong>完了表示とExcelの内容を確認します。</strong><p>練習用XMLを2つとも読み込んだ場合は、親・空要素も含む全26要素を26行で保存します。詳細出力の「商品1件を1行」にする一覧とは行の単位が異なります。</p></div></li></ol>
-      <p>「全要素」シートには元ファイル、ファイルID、要素番号、親要素番号、階層、要素名、名前空間、要素パス、属性(JSON)、テキスト、分割番号の11列が並びます。ID・数値に見えるXML値も文字列として保持するため、先頭ゼロが残ります。階層の先頭は0です。</p>
+      <p>「全要素」シートには元ファイル、ファイルID、要素番号、親要素番号、階層、要素名、名前空間、要素パス、属性(JSON)、テキスト、分割番号の11列が並びます。ID・数値に見えるXML値も文字列として保持するため、先頭ゼロが残ります。階層の先頭は0です。要素番号は内部IDのため欠番がありますが、出力の欠落ではありません。</p>
       <p>テキストは要素の直下にある文字列・CDATAです。子要素の値はその子の行に出力します。コメントとPIは出力対象の「要素」に含めません。1セルに収まらない値は続きの行へ分割し、切り捨てません。同じファイルIDと要素番号を分割番号順に並べ、要素名・名前空間・パス・属性・テキストの各列を連結すると元の値になります。先頭5列は続きの行にも繰り返します。</p>
       <p class="small-note">1シートのデータ行上限で自動的にシートを分けます。合計200万行を超える場合は停止し、既存の保存先ファイルを保持します。対象を小さくする場合は、読み込み一覧から不要なXMLを外して再実行してください。</p>
+      <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="簡単出力モードの画面を拡大"><img src="images/11-simple-export.png" alt="Excel出力タブ上部の簡単出力モード。全要素をExcel保存ボタンと、2ファイル26要素26行の完了表示。" width="984" height="688" loading="lazy"></button><figcaption>簡単出力の画面｜列を設定せずに、練習用XML2ファイルの全26要素を保存できました。</figcaption></figure>
       <h3>必要な列を選びたい場合：詳細出力</h3>
       <h3>① 「1行」の単位を選ぶ</h3><ol class="numbered-steps"><li><div><strong>「構造ビュー」へ戻り、右上を変更前XMLにします。</strong><p>検索後は <code>price</code> などが選ばれていることがあります。左のツリーから商品1件を表す <code>item</code> を選び直します。</p></div></li><li><div><strong>「この要素を出力の1行にする」を押します。</strong><p>「Excel出力」へ移動し、「1行の基準となる要素パス」が <code>/catalog/item</code> になります。1つの <code>item</code> がExcelの1行になるため、変更前XMLから3行を出力します。</p></div></li><li><div><strong>左上「対象XML」で変更前だけを選びます。</strong><p>初期状態では複数のXMLが選ばれていることがあります。この練習では <code>sample-before.xml</code> を通常クリックして1つだけ選択します。複数選択はCtrlキーで操作します。</p></div></li></ol>
-      <h3>② 列名と型を整える</h3><p>候補の列は自動で作られます。表の行をクリックして、その下の「列名」と型を変更し、<strong>必ず「列へ反映」</strong>を押します。次の4列を順に設定してください。</p>
+      <h3>② 列名と型を整える</h3><p>候補の列は自動で作られます。表の行をクリックして、その下の「列名」と型を変更し、<strong>必ず「列へ反映」</strong>を押します。次の4列を順に設定してください。編集欄が見えない場合は、右端の縦スクロールバーで下へ移動します。</p>
       <div class="table-wrap"><table><caption>練習で使う列設定</caption><thead><tr><th>相対パス</th><th>列名</th><th>型</th><th>理由</th></tr></thead><tbody><tr><td><code>@id</code></td><td>商品ID</td><td><code>string</code></td><td>001の先頭ゼロを残します。</td></tr><tr><td><code>name</code></td><td>商品名</td><td><code>string</code></td><td>文字列として保存します。</td></tr><tr><td><code>price</code></td><td>単価</td><td><code>number</code></td><td>Excelで集計できる数値として保存します。</td></tr><tr><td><code>stock</code></td><td>在庫数</td><td><code>number</code></td><td>Excelで集計できる数値として保存します。</td></tr></tbody></table></div>
       <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="Excel出力の列設定画面を拡大"><img src="images/07-columns.png" alt="Excel出力タブ。対象XMLは変更前のみ、基準パスはcatalog/item。商品ID、商品名、単価、在庫数の4列が設定されている。" width="984" height="688" loading="lazy"></button><figcaption>画面7｜列を選ぶ → 下で編集する → 「列へ反映」。IDは文字列のままにします。</figcaption></figure>
       <p>不要な列は「出力ON/OFF」で外し、「上へ」「下へ」で順序を変えられます。繰り返しの初期値 <code>join</code> は複数値を1セルへ結合します。<code>first</code> は最初だけ、<code>rows</code> は行へ展開、<code>sheet</code> は子シートです。初回は初期値のままで構いません。</p>
@@ -116,7 +117,7 @@
 
     <section id="verification" class="content-section"><div class="section-heading"><span class="section-number">11</span><div><p class="section-kicker">Verification</p><h2>完了確認</h2></div></div>
       <p>練習が終わったら、次の項目を確認してください。チェック状態はこのページを再読込するとリセットされます。</p><div class="checklist-grid"><article><h3>画面・結果</h3><label><input type="checkbox"> EXEから起動でき、XMLを2ファイル読み込めた</label><label><input type="checkbox"> 構造ビューでitemとidを確認できた</label><label><input type="checkbox"> 比較で単価と在庫数の2箇所の変更を確認できた</label><label><input type="checkbox"> プレビューで変更前の3行を確認できた</label></article><article><h3>保存・終了</h3><label><input type="checkbox"> XLSXを保存し、実際に開いて3行と値を確認した</label><label><input type="checkbox"> 商品IDの001など先頭ゼロが残っている</label><label><input type="checkbox"> 必要な設定JSON・作業ファイルを保存した</label><label><input type="checkbox"> アプリを通常の手順で終了した</label></article></div>
-      <p class="small-note">アプリはWindows Server 2022で機能・GUIテスト36件と同梱EXEの起動を検証済みです。Windows版Microsoft Excelそのものでの修復警告・再保存は未確認のため、利用環境で必ず出力を確認してください。</p>
+      <p class="small-note">アプリはWindows Server 2022で機能・GUIテスト42件と同梱EXEの起動を検証済みです。Windows版Microsoft Excelそのものでの修復警告・再保存は未確認のため、利用環境で必ず出力を確認してください。</p>
     </section>
 
     <section id="troubleshooting" class="content-section"><div class="section-heading"><span class="section-number">12</span><div><p class="section-kicker">Troubleshooting</p><h2>困ったとき</h2></div></div>
@@ -126,7 +127,7 @@
         <details><summary>Windowsの警告や会社の管理機能で実行が止まる</summary><div><p>EXEは未署名です。セキュリティ機能を無効にせず、会社の承認手順に従ってください。管理者権限での実行を標準手順にはしません。</p></div></details>
         <details><summary>XMLを読み込めない／XML_PARSE・DTD・LIMITなどが表示される</summary><div><p>XMLの構文・文字コード・ファイルの読み取り権限を確認します。UTF-8／UTF-16に対応します。DTD・外部実体を含むXMLは受け付けません。深さ256や単一テキスト1Mi文字等の上限に達した場合は、元データの担当者へ相談してください。上限を避けるための無断編集はしないでください。</p></div></details>
         <details><summary>比較できない／変更が想定と違う／「曖昧」が出る</summary><div><p>AとBに異なるファイルを選んでいるか確認します。初回は「完全比較」で試します。キー属性の重複や不足、空白・順序・コメントのオプションでも結果が変わります。画面の設定と対象ファイル名を控え、実際の要素と詳細を確認してください。</p></div></details>
-        <details><summary>Excelの行が多すぎる／少ない／空欄になる</summary><div><p>対象XMLの選択、1行の基準パス、列の相対パス、出力ON/OFF、抽出条件を確認します。練習では変更前だけを選び、<code>/catalog/item</code> を基準にします。パスや列設定は対象XMLの構造に合っている必要があります。</p></div></details>
+        <details><summary>Excelの行が多すぎる／少ない／空欄になる</summary><div><p>簡単出力は全XMLの全要素を対象にするため、練習用XML2つでは26行です。商品1件を1行にしたい場合は詳細出力を使います。</p><p>対象XMLの選択、1行の基準パス、列の相対パス、出力ON/OFF、抽出条件を確認します。練習では変更前だけを選び、<code>/catalog/item</code> を基準にします。パスや列設定は対象XMLの構造に合っている必要があります。</p></div></details>
         <details><summary>列を編集したのに結果へ反映されない</summary><div><p>表の該当行を選んで編集し、「列へ反映」を押してから再度プレビューします。プレビューを実行する前の表示は自動更新されません。</p></div></details>
         <details><summary>「XLSX保存」など下のボタンが見えない</summary><div><p>ウインドウを最大化し、「Excel出力」の右端の縦スクロールバーを下へ移動します。横幅が足りない場合も最大化して操作してください。</p></div></details>
         <details><summary>保存できない／disk I/O error／処理が遅い</summary><div><p>空き容量、保存先への書き込み権限、出力ファイルをExcelで開いたままにしていないかを確認します。大きなXMLは一時作業領域も使用します。共有フォルダで失敗する場合は、許可されたローカルフォルダへの保存を試し、会社の担当者へ権限を確認してください。</p></div></details>

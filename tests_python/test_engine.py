@@ -62,7 +62,7 @@ class EngineTests(unittest.TestCase):
         text = "a" * 32766 + "😀" + "b" * 40000
         attribute = "😀" * 20000
         namespace = "u" * 40000
-        source = self.parse(f'<r xmlns:p="{namespace}"><p:n id="001" a="{attribute}">{text}</p:n><v>=1+1</v></r>')
+        source = self.parse(f'<r xmlns:p="{namespace}"><p:n id="001" a="{attribute}">{text[:32766]}<e/>{text[32766:]}</p:n><v>=1+1</v></r>')
         rows = list(all_element_rows(self.store))
         child = [dict(zip(r.headers, r.cells)) for r in rows if r.cells[5] == "p:n" or r.cells[2] == 2]
         self.assertGreater(len(child), 1)

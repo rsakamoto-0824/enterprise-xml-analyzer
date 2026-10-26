@@ -8,6 +8,7 @@
   "files": 2,
   "modified": 1,
   "xlsx_rows": 4,
+  "simple_export_rows": 10,
   "gui": "Tk application, background import, tree and canvas",
   "network": "blocked",
   "screenshots": []

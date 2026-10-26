@@ -9,8 +9,8 @@ Windows実行版にはこのフォルダを `UserGuide/` として同梱しま�
 
 ## 画面と検証
 
-実画面10枚は[Windows CI](https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions/runs/40174537903)で撮影しました。架空の商品3件だけを使用し、撮影後の画像加工はしていません。撮影環境と比較件数は `images/capture.json` に記録しています。XLSX保存はファイル選択ダイアログだけを自動指定し、アプリの実際の出力処理を実行しています。
+実画面11枚は[Windows CI](https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions/runs/40413316950)で撮影しました。架空の商品3件だけを使用し、撮影後の画像加工はしていません。撮影環境と比較件数は `images/capture.json` に記録しています。XLSX保存はファイル選択ダイアログだけを自動指定し、アプリの実際の出力処理を実行しています。
 
-手順書はPC幅1440pxと1280pxのChromiumで確認します。HTMLの画像10枚、章目次12箇所、画像拡大とEscでの復帰、練習用XMLのダウンロード、横方向のはみ出し、HTML単体版の外部資材依存を確認します。
+手順書はPC幅1440pxと1280pxのChromiumで確認します。HTMLの画像11枚、章目次12箇所、画像拡大とEscでの復帰、練習用XMLのダウンロード、横方向のはみ出し、HTML単体版の外部資材依存を確認します。
 
 再撮影はWindows x64・Python 3.14.6で `python scripts/capture_guide_python.py` を実行します。出力先は `artifacts/python-guide/` です。手順書へ採用する画像と撮影記録を `images/` にコピーし、本文と画面の一致を確認してください。
