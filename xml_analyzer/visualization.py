@@ -212,6 +212,7 @@ def save_windows_canvas_png(canvas, target):
         getattr(gdi32, name).restype = wintypes.HANDLE
     user32.GetDC.argtypes = [wintypes.HWND]
     user32.GetClientRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
+    user32.ClientToScreen.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.POINT)]
     user32.ReleaseDC.argtypes = [wintypes.HWND, wintypes.HDC]
     user32.RedrawWindow.argtypes = [wintypes.HWND, ctypes.c_void_p, wintypes.HANDLE, wintypes.UINT]
     gdi32.CreateCompatibleDC.argtypes = [wintypes.HDC]
@@ -233,12 +234,21 @@ def save_windows_canvas_png(canvas, target):
     width, height = rect.right, rect.bottom
     if not 1 <= width <= 8000 or not 1 <= height <= 8000:
         raise AppError("PNG_SIZE: グラフ表示サイズが保存上限を超えています。")
-    source = user32.GetDC(hwnd)
+    origin = wintypes.POINT()
+    source_window = hwnd
+    if isinstance(canvas, (tk.Tk, tk.Toplevel)):
+        # The composited desktop avoids stale child-window pixels in a root DC.
+        source_window = None
+        if not user32.ClientToScreen(hwnd, ctypes.byref(origin)):
+            raise OSError()
+    source = user32.GetDC(source_window)
+    if not source:
+        raise OSError()
     dest = gdi32.CreateCompatibleDC(source)
     bitmap = gdi32.CreateCompatibleBitmap(source, width, height)
     old = gdi32.SelectObject(dest, bitmap)
     try:
-        if not gdi32.BitBlt(dest, 0, 0, width, height, source, 0, 0, 0x00CC0020):
+        if not gdi32.BitBlt(dest, 0, 0, width, height, source, origin.x, origin.y, 0x00CC0020):
             raise OSError()
         gdi32.SelectObject(dest, old)
         header = struct.pack("<IiiHHIIiiII", 40, width, -height, 1, 32, 0, 0, 0, 0, 0, 0)
@@ -263,4 +273,4 @@ def save_windows_canvas_png(canvas, target):
         gdi32.SelectObject(dest, old)
         gdi32.DeleteObject(bitmap)
         gdi32.DeleteDC(dest)
-        user32.ReleaseDC(hwnd, source)
+        user32.ReleaseDC(source_window, source)
