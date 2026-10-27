@@ -80,12 +80,14 @@ def main():
         app.set_file(before)
         item = next(n for n in app.store.nodes(before, path="/catalog/item"))
         app.jump_to_node(item)
+        app.detail.yview_moveto(1)
         capture("03-tree", "構造ビュー")
         app.search_text.set("price")
         app.search_exact.set(True)
         app.start_search()
         wait()
         assert len(app.search_results.get_children()) == 3
+        app.pages["構造ビュー"].canvas.yview_moveto(1)
         capture("04-search", "構造ビュー")
         app.jump_to_node(item)
         app.focus_graph()
@@ -97,6 +99,7 @@ def main():
         first = app.differences.get_children()[0]
         app.differences.selection_set(first)
         app.show_diff_detail()
+        app.pages["XML比較"].canvas.yview_moveto(1)
         capture("06-compare", "XML比較")
         counts = app.comparison["counts"]
         app.jump_to_node(item)
