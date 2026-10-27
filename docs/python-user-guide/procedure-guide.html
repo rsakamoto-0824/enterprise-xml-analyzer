@@ -56,6 +56,7 @@
       <ol class="numbered-steps"><li><div><strong><code>EnterpriseXmlAnalyzer.exe</code> をダブルクリックします。</strong><p>展開したフォルダ内のEXEを実行します。通常、管理者として実行する必要はありません。</p></div></li><li><div><strong>タイトルと「XML読込」画面を確認します。</strong><p>「XML読込」「構造ビュー」「グラフ」「XML比較」「Excel出力」「統計」「設定」の7画面があります。ウインドウは最小640×480まで変更でき、幅が狭い場合は上部の「画面」で切り替えます。ボタンは折り返し、縦横のスクロールで操作できます。処理の状況と「中断」ボタンは画面下部にあります。</p></div></li></ol>
       <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="起動直後の画面を拡大"><img src="images/01-start.png" alt="起動直後。XML読込タブにXMLファイルを選択ボタンと空の一覧が表示されている。" width="984" height="688"></button><figcaption>画面1｜起動直後。まず「XMLファイルを選択」を使います。</figcaption></figure>
       <p class="small-note">未署名EXEのためWindowsや会社の管理機能が起動を止める場合があります。会社の実行ルールに従って配布担当者へ確認してください。セキュリティ機能を無効にして実行しないでください。</p>
+      <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="小さなウインドウでの操作画面を拡大"><img src="images/12-resize.png" alt="800×600のウインドウ。上部の画面選択、学習データの保存ボタン、プレビューと縦横のスクロールが表示される。" width="800" height="600" loading="lazy"></button><figcaption>サイズ変更｜幅が狭いときは上部の「画面」で切り替えます。右端の縦スクロールで上へ戻すと1行の単位・目的変数を変更できます。</figcaption></figure>
     </section>
 
     <section id="load" class="content-section"><div class="section-heading"><span class="section-number">05</span><div><p class="section-kicker">Import</p><h2>XMLを読み込む</h2></div></div>
@@ -120,7 +121,7 @@
     </section>
 
     <section id="verification" class="content-section"><div class="section-heading"><span class="section-number">11</span><div><p class="section-kicker">Verification</p><h2>完了確認</h2></div></div>
-      <p>練習が終わったら、次の項目を確認してください。チェック状態はこのページを再読込するとリセットされます。</p><div class="checklist-grid"><article><h3>画面・結果</h3><label><input type="checkbox"> EXEから起動でき、XMLを2ファイル読み込めた</label><label><input type="checkbox"> 構造ビューでitemとidを確認できた</label><label><input type="checkbox"> 比較で単価と在庫数の2箇所の変更を確認できた</label><label><input type="checkbox"> プレビューで変更前の3行を確認できた</label></article><article><h3>保存・終了</h3><label><input type="checkbox"> XLSXを保存し、実際に開いて3行と値を確認した</label><label><input type="checkbox"> 商品IDの001など先頭ゼロが残っている</label><label><input type="checkbox"> 必要な設定JSON・作業ファイルを保存した</label><label><input type="checkbox"> アプリを通常の手順で終了した</label></article></div>
+      <p>練習が終わったら、次の項目を確認してください。チェック状態はこのページを再読込するとリセットされます。</p><div class="checklist-grid"><article><h3>画面・結果</h3><label><input type="checkbox"> EXEから起動でき、XMLを2ファイル読み込めた</label><label><input type="checkbox"> 構造ビューでitemとidを確認できた</label><label><input type="checkbox"> 比較で単価と在庫数の2箇所の変更を確認できた</label><label><input type="checkbox"> 簡単出力では6件・4項目、詳細出力では変更前の3行を確認できた</label></article><article><h3>保存・終了</h3><label><input type="checkbox"> XLSXを保存し、簡単出力の4種類のシート、または詳細出力の3行を実際に開いて確認した</label><label><input type="checkbox"> 商品IDの001など先頭ゼロが残っている</label><label><input type="checkbox"> 必要な設定JSON・作業ファイルを保存した</label><label><input type="checkbox"> アプリを通常の手順で終了した</label></article></div>
       <p class="small-note">アプリはWindows Server 2022で機能・GUIテスト52件と同梱EXEの起動を検証済みです。Windows版Microsoft Excelそのものでの修復警告・再保存は未確認のため、利用環境で必ず出力を確認してください。</p>
     </section>
 

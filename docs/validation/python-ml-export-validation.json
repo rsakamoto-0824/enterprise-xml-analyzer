@@ -1,0 +1,39 @@
+{
+  "status": "PASS",
+  "source": "Synthetic XML only; see tests_python/test_ml_export.py for generator and expected types",
+  "sheets": [
+    {
+      "name": "学習データ",
+      "rows": 4,
+      "columns": 6
+    },
+    {
+      "name": "出典",
+      "rows": 2,
+      "columns": 6
+    },
+    {
+      "name": "項目定義",
+      "rows": 6,
+      "columns": 8
+    },
+    {
+      "name": "出力情報",
+      "rows": 12,
+      "columns": 2
+    }
+  ],
+  "formula_count": 0,
+  "cell_errors": 0,
+  "external_links": 0,
+  "vba": false,
+  "defined_names": 0,
+  "tables": 0,
+  "charts": 0,
+  "literal_formula_preserved": true,
+  "numeric_boolean_missing_and_leading_zero_verified": true,
+  "zip_xml_relationships": "PASS",
+  "frozen_headers_filters": "PASS",
+  "all_sheet_visual_review": "All 4 sheets / 8 PDF pages rendered with LibreOffice 26.2.3.2, inspected; original XLSX unchanged. Wide tables span horizontal pages.",
+  "microsoft_excel_reopen": "Unavailable; company acceptance pending"
+}

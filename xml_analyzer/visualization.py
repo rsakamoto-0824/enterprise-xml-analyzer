@@ -213,6 +213,7 @@ def save_windows_canvas_png(canvas, target):
     user32.GetDC.argtypes = [wintypes.HWND]
     user32.GetClientRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
     user32.ReleaseDC.argtypes = [wintypes.HWND, wintypes.HDC]
+    user32.RedrawWindow.argtypes = [wintypes.HWND, ctypes.c_void_p, wintypes.HANDLE, wintypes.UINT]
     gdi32.CreateCompatibleDC.argtypes = [wintypes.HDC]
     gdi32.CreateCompatibleBitmap.argtypes = [wintypes.HDC, ctypes.c_int, ctypes.c_int]
     gdi32.SelectObject.argtypes = [wintypes.HDC, wintypes.HANDLE]
@@ -222,6 +223,9 @@ def save_windows_canvas_png(canvas, target):
     gdi32.GetDIBits.argtypes = [wintypes.HDC, wintypes.HBITMAP, wintypes.UINT, wintypes.UINT, ctypes.c_void_p, ctypes.c_void_p, wintypes.UINT]
     canvas.update_idletasks()
     hwnd = canvas.winfo_id()
+    # Flush native child paints after resize/scroll before copying the window pixels.
+    redraw_flags = 0x0001 | 0x0004 | 0x0080 | 0x0100  # invalidate, erase, all children, update now
+    user32.RedrawWindow(hwnd, None, None, redraw_flags)
     rect = wintypes.RECT()
     user32.GetClientRect(hwnd, ctypes.byref(rect))
     width, height = rect.right, rect.bottom
