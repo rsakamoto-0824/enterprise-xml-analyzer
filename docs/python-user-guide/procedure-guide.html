@@ -15,7 +15,7 @@
   <a class="skip-link" href="#main-content">本文へ移動</a>
   <button id="toc-toggle" class="toc-toggle" type="button" aria-controls="sidebar" aria-expanded="false">☰ 目次</button>
   <aside id="sidebar" class="sidebar" aria-label="目次">
-    <div class="sidebar-header"><p class="eyebrow">Windows Desktop · v2.1</p><p class="sidebar-title">Enterprise XML<br>Analyzer</p><p class="sidebar-subtitle">スクリーンショット付き操作手順書</p></div>
+    <div class="sidebar-header"><p class="eyebrow">Windows Desktop · v2.2</p><p class="sidebar-title">Enterprise XML<br>Analyzer</p><p class="sidebar-subtitle">スクリーンショット付き操作手順書</p></div>
     <nav><ol class="toc-list">
       <li><a href="#overview">01 目的と対象</a></li><li><a href="#prepare">02 展開したフォルダの確認</a></li><li><a href="#workflow">03 全体の流れ・練習用XML</a></li><li><a href="#launch">04 アプリを起動する</a></li><li><a href="#load">05 XMLを読み込む</a></li><li><a href="#tree">06 構造・検索を確認する</a></li><li><a href="#graph">07 グラフで見る</a></li><li><a href="#compare">08 2つのXMLを比較する</a></li><li><a href="#export">09 Excelへ出力する</a></li><li><a href="#save">10 設定と作業を保存・終了する</a></li><li><a href="#verification">11 完了確認</a></li><li><a href="#troubleshooting">12 困ったとき</a></li>
     </ol></nav>
@@ -53,7 +53,7 @@
     </section>
 
     <section id="launch" class="content-section"><div class="section-heading"><span class="section-number">04</span><div><p class="section-kicker">Launch</p><h2>アプリを起動する</h2></div></div>
-      <ol class="numbered-steps"><li><div><strong><code>EnterpriseXmlAnalyzer.exe</code> をダブルクリックします。</strong><p>展開したフォルダ内のEXEを実行します。通常、管理者として実行する必要はありません。</p></div></li><li><div><strong>タイトルと「XML読込」画面を確認します。</strong><p>「XML読込」「構造ビュー」「グラフ」「XML比較」「Excel出力」「統計」「設定」の7つのタブが表示されます。処理の状況と「中断」ボタンは画面下部にあります。</p></div></li></ol>
+      <ol class="numbered-steps"><li><div><strong><code>EnterpriseXmlAnalyzer.exe</code> をダブルクリックします。</strong><p>展開したフォルダ内のEXEを実行します。通常、管理者として実行する必要はありません。</p></div></li><li><div><strong>タイトルと「XML読込」画面を確認します。</strong><p>「XML読込」「構造ビュー」「グラフ」「XML比較」「Excel出力」「統計」「設定」の7画面があります。ウインドウは最小640×480まで変更でき、幅が狭い場合は上部の「画面」で切り替えます。ボタンは折り返し、縦横のスクロールで操作できます。処理の状況と「中断」ボタンは画面下部にあります。</p></div></li></ol>
       <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="起動直後の画面を拡大"><img src="images/01-start.png" alt="起動直後。XML読込タブにXMLファイルを選択ボタンと空の一覧が表示されている。" width="984" height="688"></button><figcaption>画面1｜起動直後。まず「XMLファイルを選択」を使います。</figcaption></figure>
       <p class="small-note">未署名EXEのためWindowsや会社の管理機能が起動を止める場合があります。会社の実行ルールに従って配布担当者へ確認してください。セキュリティ機能を無効にして実行しないでください。</p>
     </section>
@@ -87,12 +87,16 @@
     </section>
 
     <section id="export" class="content-section"><div class="section-heading"><span class="section-number">09</span><div><p class="section-kicker">Excel Export</p><h2>必要な項目をExcelへ出力する</h2></div></div>
-      <h3 id="simple-export">設定なしで全部出力する：簡単出力モード</h3>
-      <ol class="numbered-steps"><li><div><strong>必要なXMLをすべて読み込みます。</strong><p>「XML読込」の一覧にある全ファイルが対象です。画面右上や詳細出力の選択状態、列や条件の設定には影響されません。</p></div></li><li><div><strong>「全要素をExcel保存」を押し、保存先を選びます。</strong><p>「XML読込」タブのボタン、または「Excel出力」タブ上部の「簡単出力モード」から実行できます。列やパスを設定する必要はありません。</p></div></li><li><div><strong>完了表示とExcelの内容を確認します。</strong><p>練習用XMLを2つとも読み込んだ場合は、親・空要素も含む全26要素を26行で保存します。詳細出力の「商品1件を1行」にする一覧とは行の単位が異なります。</p></div></li></ol>
-      <p>「全要素」シートには元ファイル、ファイルID、要素番号、親要素番号、階層、要素名、名前空間、要素パス、属性(JSON)、テキスト、分割番号の11列が並びます。ID・数値に見えるXML値も文字列として保持するため、先頭ゼロが残ります。階層の先頭は0です。要素番号は内部IDのため欠番がありますが、出力の欠落ではありません。</p>
-      <p>テキストは要素の直下にある文字列・CDATAです。子要素の値はその子の行に出力します。コメントとPIは出力対象の「要素」に含めません。1セルに収まらない値は続きの行へ分割し、切り捨てません。同じファイルIDと要素番号を分割番号順に並べ、要素名・名前空間・パス・属性・テキストの各列を連結すると元の値になります。先頭5列は続きの行にも繰り返します。</p>
-      <p class="small-note">1シートのデータ行上限で自動的にシートを分けます。合計200万行を超える場合は停止し、既存の保存先ファイルを保持します。対象を小さくする場合は、読み込み一覧から不要なXMLを外して再実行してください。</p>
-      <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="簡単出力モードの画面を拡大"><img src="images/11-simple-export.png" alt="Excel出力タブ上部の簡単出力モード。全要素をExcel保存ボタンと、2ファイル26要素26行の完了表示。" width="984" height="688" loading="lazy"></button><figcaption>簡単出力の画面｜列を設定せずに、練習用XML2ファイルの全26要素を保存できました。</figcaption></figure>
+      <h3 id="simple-export">回帰・分類用の表を作る：簡単出力モード</h3>
+      <ol class="numbered-steps"><li><div><strong>XMLを読み込み、「Excel出力」を開きます。</strong><p>一覧の全XMLが対象です。詳細出力の列・条件・対象選択とは独立しています。</p></div></li><li><div><strong>「構造を確認・プレビュー」を押し、1行の単位を確認します。</strong><p>全XMLで共通する最も浅い繰り返し要素を自動候補にします。練習用は <code>/catalog/item</code> で、商品1件が1行です。候補を選ぶか要素の絶対パスを入力して変更できます。「XMLファイル単位」なら1ファイルが1行です。変更後は再プレビューしてください。</p></div></li><li><div><strong>必要なら「目的変数」を選びます。</strong><p>予測したい項目です。この例で単価の回帰用表を作る場合は <code>price</code> を選びます。分類では分類ラベルの項目を選びます。未指定でも保存でき、あとで学習時に決められます。</p></div></li><li><div><strong>「学習データをExcel保存」を押し、保存先を選びます。</strong><p>練習用XML2ファイルでは6件・4項目（<code>@id</code>、<code>name</code>、<code>price</code>、<code>stock</code>）です。画面下部の「学習データ保存 · 完了」を確認します。</p></div></li></ol>
+      <div class="table-wrap"><table><caption>簡単出力の4種類のシート</caption><thead><tr><th>シート</th><th>内容</th></tr></thead><tbody><tr><td>学習データ</td><td>1件1行・1項目1列。選んだ要素配下の値と属性。数値・真偽値は対応するセル型、欠損は空欄です。</td></tr><tr><td>出典</td><td>元ファイルとデータ連番の対応。ファイル名や内部IDを学習列へ自動追加しません。</td></tr><tr><td>項目定義</td><td>全件で判定した型、目的変数、ID候補、欠損数、定数列候補、XML相対パス。</td></tr><tr><td>出力情報</td><td>1行の単位、件数、型と欠損の扱い、学習前の確認事項。</td></tr></tbody></table></div>
+      <p>先頭ゼロ、ID候補、15桁を超える数値は文字列で保持します。数値と文字列が混在する列も文字列です。空文字・空白のみ・存在しない項目は空欄になります。子要素の繰り返しは <code>value[1]</code>、<code>value[2]</code> の別列です。候補は構造から選ぶため、1行の意味は利用者が確認してください。</p>
+      <p class="small-note">プレビューは全件の型確認後に先頭20件・30項目・各80文字だけ表示します。保存は全件・全項目です。1件1024列・4Mi UTF-16単位、1セル32767 UTF-16単位が上限で、超過時は1行を分割せず保存を中止します。選んだ要素の外側の値が必要なら、行の単位を親へ変更してください。</p>
+      <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="簡単出力モードの画面を拡大"><img src="images/11-simple-export.png" alt="Excel出力の簡単出力モード。1行の単位と目的変数を指定し、学習データを保存する。" width="984" height="688" loading="lazy"></button><figcaption>簡単出力｜商品1件を1行とし、2ファイルから6件・4項目を保存します。</figcaption></figure>
+      <div class="callout"><p>このアプリはモデル学習・欠損補完・カテゴリ符号化を行いません。ID・定数列・目的変数・欠損を確認し、同じ対象や将来の情報が評価用データへ混ざらないよう分割してください。練習用の変更前後の商品は同一対象なので、機械的にランダム分割する例には使いません。</p></div>
+      <h3>XMLの全要素を一覧で取り出す場合</h3>
+      <p>「全要素一覧をExcel保存」を使います。親・空要素を含む1要素1行・11列（元ファイル、ファイルID、要素番号、親要素番号、階層、要素名、名前空間、要素パス、属性JSON、直接テキスト、分割番号）の一覧です。練習用2ファイルでは26行になります。こちらだけは長い値を継続行へ分割し、同じファイルID・要素番号の各列を分割番号順に連結できます。学習用の行単位とは異なります。</p>
+      <p class="small-note">各方式とも1シート1048575データ行で自動分割し、補助シートを含む合計200万行が安全上限です。超過・中断・失敗時は既存の保存先を保持します。</p>
       <h3>必要な列を選びたい場合：詳細出力</h3>
       <h3>① 「1行」の単位を選ぶ</h3><ol class="numbered-steps"><li><div><strong>「構造ビュー」へ戻り、右上を変更前XMLにします。</strong><p>検索後は <code>price</code> などが選ばれていることがあります。左のツリーから商品1件を表す <code>item</code> を選び直します。</p></div></li><li><div><strong>「この要素を出力の1行にする」を押します。</strong><p>「Excel出力」へ移動し、「1行の基準となる要素パス」が <code>/catalog/item</code> になります。1つの <code>item</code> がExcelの1行になるため、変更前XMLから3行を出力します。</p></div></li><li><div><strong>左上「対象XML」で変更前だけを選びます。</strong><p>初期状態では複数のXMLが選ばれていることがあります。この練習では <code>sample-before.xml</code> を通常クリックして1つだけ選択します。複数選択はCtrlキーで操作します。</p></div></li></ol>
       <h3>② 列名と型を整える</h3><p>候補の列は自動で作られます。表の行をクリックして、その下の「列名」と型を変更し、<strong>必ず「列へ反映」</strong>を押します。次の4列を順に設定してください。編集欄が見えない場合は、右端の縦スクロールバーで下へ移動します。</p>
@@ -117,7 +121,7 @@
 
     <section id="verification" class="content-section"><div class="section-heading"><span class="section-number">11</span><div><p class="section-kicker">Verification</p><h2>完了確認</h2></div></div>
       <p>練習が終わったら、次の項目を確認してください。チェック状態はこのページを再読込するとリセットされます。</p><div class="checklist-grid"><article><h3>画面・結果</h3><label><input type="checkbox"> EXEから起動でき、XMLを2ファイル読み込めた</label><label><input type="checkbox"> 構造ビューでitemとidを確認できた</label><label><input type="checkbox"> 比較で単価と在庫数の2箇所の変更を確認できた</label><label><input type="checkbox"> プレビューで変更前の3行を確認できた</label></article><article><h3>保存・終了</h3><label><input type="checkbox"> XLSXを保存し、実際に開いて3行と値を確認した</label><label><input type="checkbox"> 商品IDの001など先頭ゼロが残っている</label><label><input type="checkbox"> 必要な設定JSON・作業ファイルを保存した</label><label><input type="checkbox"> アプリを通常の手順で終了した</label></article></div>
-      <p class="small-note">アプリはWindows Server 2022で機能・GUIテスト42件と同梱EXEの起動を検証済みです。Windows版Microsoft Excelそのものでの修復警告・再保存は未確認のため、利用環境で必ず出力を確認してください。</p>
+      <p class="small-note">アプリはWindows Server 2022で機能・GUIテスト52件と同梱EXEの起動を検証済みです。Windows版Microsoft Excelそのものでの修復警告・再保存は未確認のため、利用環境で必ず出力を確認してください。</p>
     </section>
 
     <section id="troubleshooting" class="content-section"><div class="section-heading"><span class="section-number">12</span><div><p class="section-kicker">Troubleshooting</p><h2>困ったとき</h2></div></div>
@@ -127,16 +131,16 @@
         <details><summary>Windowsの警告や会社の管理機能で実行が止まる</summary><div><p>EXEは未署名です。セキュリティ機能を無効にせず、会社の承認手順に従ってください。管理者権限での実行を標準手順にはしません。</p></div></details>
         <details><summary>XMLを読み込めない／XML_PARSE・DTD・LIMITなどが表示される</summary><div><p>XMLの構文・文字コード・ファイルの読み取り権限を確認します。UTF-8／UTF-16に対応します。DTD・外部実体を含むXMLは受け付けません。深さ256や単一テキスト1Mi文字等の上限に達した場合は、元データの担当者へ相談してください。上限を避けるための無断編集はしないでください。</p></div></details>
         <details><summary>比較できない／変更が想定と違う／「曖昧」が出る</summary><div><p>AとBに異なるファイルを選んでいるか確認します。初回は「完全比較」で試します。キー属性の重複や不足、空白・順序・コメントのオプションでも結果が変わります。画面の設定と対象ファイル名を控え、実際の要素と詳細を確認してください。</p></div></details>
-        <details><summary>Excelの行が多すぎる／少ない／空欄になる</summary><div><p>簡単出力は全XMLの全要素を対象にするため、練習用XML2つでは26行です。商品1件を1行にしたい場合は詳細出力を使います。</p><p>対象XMLの選択、1行の基準パス、列の相対パス、出力ON/OFF、抽出条件を確認します。練習では変更前だけを選び、<code>/catalog/item</code> を基準にします。パスや列設定は対象XMLの構造に合っている必要があります。</p></div></details>
+        <details><summary>Excelの行が多すぎる／少ない／空欄になる</summary><div><p>簡単出力は選んだ繰り返し要素が1行で、練習用XML2つでは商品6件です。「全要素一覧」は26行です。1行の単位と全XMLの構造を確認し、変更したら再プレビューしてください。</p><p>対象XMLの選択、1行の基準パス、列の相対パス、出力ON/OFF、抽出条件を確認します。練習では変更前だけを選び、<code>/catalog/item</code> を基準にします。パスや列設定は対象XMLの構造に合っている必要があります。</p></div></details>
         <details><summary>列を編集したのに結果へ反映されない</summary><div><p>表の該当行を選んで編集し、「列へ反映」を押してから再度プレビューします。プレビューを実行する前の表示は自動更新されません。</p></div></details>
-        <details><summary>「XLSX保存」など下のボタンが見えない</summary><div><p>ウインドウを最大化し、「Excel出力」の右端の縦スクロールバーを下へ移動します。横幅が足りない場合も最大化して操作してください。</p></div></details>
+        <details><summary>「XLSX保存」など下のボタンが見えない</summary><div><p>各画面の右端の縦スクロールで下へ移動します。詳細出力の中には別の縦横スクロールもあります。画面幅が狭い場合は上部の「画面」で切り替えます。</p></div></details>
         <details><summary>保存できない／disk I/O error／処理が遅い</summary><div><p>空き容量、保存先への書き込み権限、出力ファイルをExcelで開いたままにしていないかを確認します。大きなXMLは一時作業領域も使用します。共有フォルダで失敗する場合は、許可されたローカルフォルダへの保存を試し、会社の担当者へ権限を確認してください。</p></div></details>
         <details><summary>全データ削除・終了に時間がかかる</summary><div><p>大量データではSQLiteの整理に時間がかかります。中断・終了操作を連打せず待ってください。100万要素後の削除で約1分かかった検証例があります。</p></div></details>
       </div>
       <div class="callout info"><div class="callout-icon" aria-hidden="true">i</div><div><h3>解決しない場合</h3><p>配布担当者へ、Windowsの種類、アプリの版、対象ファイル名、操作、表示メッセージを伝えてください。「設定」→「技術ログをJSON保存」も利用できます。XMLの実データや作業ファイルを送る場合は、送付先と内容を会社のルールに従って確認してください。</p></div></div>
       <p class="small-note">配布担当者向け: <a href="https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions">GitHubのビルド一覧</a>はアクセス権を持つ利用者のみ閲覧できます。Actionsの配布物は保存期限があるため、期限切れの場合は担当者へ再配布を依頼してください。</p>
     </section>
-    <footer class="page-footer"><p>Enterprise XML Analyzer · Windows版ユーザー手順書 · v2.1</p><p>更新: 2026/10/27 · 画面は架空の練習用データを使用</p></footer>
+    <footer class="page-footer"><p>Enterprise XML Analyzer · Windows版ユーザー手順書 · v2.2</p><p>更新: 2026/10/27 · 画面は架空の練習用データを使用</p></footer>
   </main>
   <button id="back-to-top" class="back-to-top" type="button" aria-label="ページ上部へ戻る"><span aria-hidden="true">↑</span> トップへ戻る</button>
   <dialog id="image-viewer" aria-labelledby="image-viewer-title"><div class="viewer-bar"><p id="image-viewer-title">画面の拡大表示</p><button id="close-viewer" type="button">閉じる（Esc）</button></div><img id="viewer-image" alt=""><p class="viewer-note">横幅が足りない場合は画像の下の横スクロールで確認できます。</p></dialog>

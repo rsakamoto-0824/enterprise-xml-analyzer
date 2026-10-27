@@ -9,6 +9,7 @@ from xml.sax.saxutils import escape, quoteattr
 import zlib
 
 from .models import AppError, MAX_GRAPH_NODES
+from .layout import FlowFrame
 from .writers import atomic_target
 
 
@@ -61,13 +62,13 @@ class Graph(ttk.Frame):
         self.collapsed = set()
         self.horizontal = True
         self.points, self.edges = [], []
-        bar = ttk.Frame(self)
+        bar = FlowFrame(self)
         bar.pack(fill="x", pady=6)
         for text, action in (("縦／横", self.toggle_direction), ("全体を表示", self.reset),
                              ("拡大", lambda: self.zoom(1.2)), ("縮小", lambda: self.zoom(1 / 1.2)),
                              ("SVG保存", self.save_svg), ("PNG保存", self.save_png)):
             ttk.Button(bar, text=text, command=action).pack(side="left", padx=3)
-        self.notice = ttk.Label(self, text="ノードを選択すると詳細へ移動。ダブルクリックで開閉。ドラッグで移動。")
+        self.notice = ttk.Label(self, text="ノードを選択すると詳細へ移動。ダブルクリックで開閉。ドラッグで移動。", wraplength=900)
         self.notice.pack(anchor="w", pady=4)
         box = ttk.Frame(self)
         box.pack(fill="both", expand=True)
