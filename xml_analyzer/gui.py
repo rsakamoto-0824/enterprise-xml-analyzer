@@ -967,6 +967,8 @@ class Application:
         self.ml_record_choice.configure(values=(self.ml_auto, self.ml_file_unit, *plan.candidates))
         self.ml_record_path.set(plan.record_path or self.ml_file_unit)
         self.ml_target.configure(values=("未指定", *plan.headers))
+        if self.ml_target.get() not in ("未指定", *plan.headers):
+            self.ml_target.set("未指定")
         clear_tree(self.ml_preview)
         # Keep the native preview responsive even when a record has hundreds of features.
         columns = tuple(f"c{i}" for i in range(min(30, len(plan.headers))))

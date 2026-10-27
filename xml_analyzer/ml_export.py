@@ -20,7 +20,12 @@ def numeric_value(value):
         return None
     try:
         number = Decimal(text)
-        if not number.is_finite() or len(number.normalize().as_tuple().digits) > 15 or abs(number.adjusted()) > 307:
+        digits = number.as_tuple().digits
+        significant = len(digits)
+        while significant and digits[significant - 1] == 0:
+            significant -= 1
+        # Decimal.normalize() rounds with the current context and can hide precision.
+        if not number.is_finite() or significant > 15 or abs(number.adjusted()) > 307:
             return None
         return int(number) if number == number.to_integral_value() and abs(number) < 10**15 else float(number)
     except (InvalidOperation, ValueError, OverflowError):

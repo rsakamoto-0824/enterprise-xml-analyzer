@@ -231,6 +231,7 @@ class GuiTests(unittest.TestCase):
         self.app.preview_ml()
         self.wait()
         self.assertEqual(len(self.app.ml_preview.get_children()), 2)
+        self.assertEqual(self.app.ml_target.get(), "未指定")
         self.app.clear_workspace()
         self.wait()
         self.assertEqual(self.app.ml_target.get(), "未指定")

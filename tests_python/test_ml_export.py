@@ -6,10 +6,11 @@ from unittest.mock import patch
 from xml.etree import ElementTree as ET
 import zipfile
 
-from xml_analyzer.ml_export import matrix_rows, plan_export, preview_export, save_export, workbook_rows
-from xml_analyzer.models import AppError, Cancelled, Task
+from xml_analyzer.ml_export import matrix_rows, numeric_value, plan_export, preview_export, save_export, workbook_rows
+from xml_analyzer.models import AppError, Cancelled, Column, Task, Template
 from xml_analyzer.parser import parse_file
 from xml_analyzer.storage import Store
+from xml_analyzer.writers import write_xlsx
 
 
 class MLExportTests(unittest.TestCase):
@@ -41,6 +42,9 @@ class MLExportTests(unittest.TestCase):
         self.assertIn("group[2]/n[1]", root.headers)
 
     def test_global_types_missing_ids_and_repeated_children(self):
+        self.assertIsNone(numeric_value("1.000000000000000000000000000000001"))
+        self.assertIsNone(numeric_value("100000000000000000000000000000001"))
+        self.assertEqual(numeric_value("100000000000000000000000000000000"), 1e32)
         self.parse('<r><n id="123"><v>1.5</v><ok>true</ok><code>001</code><large>1234567890123456</large><tag>A</tag><tag>B</tag><empty/></n>'
                    '<n id="124"><v>2</v><ok>FALSE</ok><code>002</code><large>1234567890123457</large><tag>C</tag></n>'
                    '<n id="125"><v/><ok> </ok><code>003</code></n></r>')
@@ -100,6 +104,14 @@ class MLExportTests(unittest.TestCase):
         source = [r.cells for r in workbook_rows(self.store, plan_export(self.store), "", Task()) if r.sheet == "出典"]
         self.assertEqual(source[0][2:5], [1, 2, 2])
         self.assertEqual(source[1][2:5], [3, 3, 1])
+        split = self.base / "split.xlsx"
+        template = Template(sheet_rows=2, source_file=False, columns=[Column(".", "dummy")])
+        write_xlsx(split, workbook_rows(self.store, plan_export(self.store), "y", Task()), template)
+        with zipfile.ZipFile(split) as archive:
+            names = [s.attrib["name"] for s in ET.fromstring(archive.read("xl/workbook.xml")).findall(".//{*}sheet")]
+            self.assertEqual(names[:3], ["学習データ", "学習データ-2", "出典"])
+            self.assertEqual(len(ET.fromstring(archive.read("xl/worksheets/sheet1.xml")).findall(".//{*}row")), 3)
+            self.assertEqual(len(ET.fromstring(archive.read("xl/worksheets/sheet2.xml")).findall(".//{*}row")), 2)
 
     def test_bad_path_target_overflow_cancel_preserve_existing_file(self):
         self.parse('<r><n>1</n><n>2</n></r>')
@@ -133,6 +145,11 @@ class MLExportTests(unittest.TestCase):
         self.parse('<r><n>' + ''.join(f'<v{i}>1</v{i}>' for i in range(1025)) + '</n></r>')
         with self.assertRaisesRegex(AppError, "ML_RECORD_LIMIT"):
             plan_export(self.store, "/r/n")
+        self.store.clear()
+        self.parse('<r><n>' + ''.join(f'<v{i}>1</v{i}>' for i in range(600)) + '</n><n>'
+                   + ''.join(f'<v{i}>1</v{i}>' for i in range(600, 1200)) + '</n></r>')
+        with self.assertRaisesRegex(AppError, "ML_COLUMN_LIMIT"):
+            plan_export(self.store)
 
 
 if __name__ == "__main__":
