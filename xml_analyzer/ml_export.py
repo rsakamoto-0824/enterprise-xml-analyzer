@@ -203,8 +203,10 @@ def plan_export(store, record_path=None, task=None):
         path_name = feature_path(feature.key, plan.repeated)
         check_cell(path_name)
         name = path_name if len(path_name) <= 128 else f"項目_{index:04d}"
+        base_name, suffix = name, 1
         while name in names:
-            name = f"項目_{index:04d}_" + name[:110]
+            name = f"{base_name[:110]}_{index}_{suffix}"
+            suffix += 1
         feature.name = name
         names.add(name)
     plan.features = list(found.values())

@@ -151,6 +151,23 @@ class MLExportTests(unittest.TestCase):
                    + ''.join(f'<v{i}>1</v{i}>' for i in range(600, 1200)) + '</n></r>')
         with self.assertRaisesRegex(AppError, "ML_COLUMN_LIMIT"):
             plan_export(self.store)
+        self.store.clear()
+        # XML names can match generated aliases, including a repeated-prefix fixed point.
+        index = 1
+        while True:
+            names, name = [], f"項目_{index:04d}"
+            while name not in names:
+                names.append(name)
+                name = f"項目_{index:04d}_" + name[:110]
+            if index == len(names) + 1:
+                break
+            index = len(names) + 1
+        names.append("long" * 40)
+        self.parse('<r><n>' + ''.join(f'<{name}>1</{name}>' for name in names) + '</n></r>')
+        plan = plan_export(self.store, "/r/n")
+        self.assertEqual(len(plan.headers), len(names))
+        self.assertEqual(len(set(plan.headers)), len(names))
+        self.assertTrue(all(len(name) <= 128 for name in plan.headers))
 
 
 if __name__ == "__main__":
