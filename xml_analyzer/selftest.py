@@ -118,6 +118,7 @@ def self_test(screenshot_dir=None):
                 root.update()
                 assert app.navigation.winfo_ismapped()
                 app.pages["Excel出力"].reveal(app.simple_export_button)
+                root.update()
                 name = "python-selftest-resize.png"
                 save_windows_canvas_png(root, Path(screenshot_dir) / name)
                 screenshots.append(name)

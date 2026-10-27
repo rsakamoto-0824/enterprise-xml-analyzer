@@ -98,8 +98,14 @@ py -3.14 build_windows.py
 10万件の合成XML（300001要素）から3列の学習表を作成する性能試験を追加しました。Windowsのビルド・同梱EXE・画面撮影・大容量試験はGitHub Actionsで実施します。会社のWindows 11 / Server 2019とMicrosoft Excel本体での受入確認は、引き続き未確認です。
 
 
-[Windows Server 2022 / CPython 3.14.6の試験（ce81b3a）](https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions/runs/40507849201)で、52件すべてと同梱EXEの自己検証が成功しました。最小640×480の画面、4件・2項目・4シートの学習表、10行の全要素一覧を確認しています。Windows実画面12枚をHTML手順書に反映しました。
+[Windows Server 2022 / CPython 3.14.6の最終処理試験（c43539c）](https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions/runs/40509083405)で、52件すべてと同梱EXEの自己検証が成功しました。最小640×480の操作、4件・2項目・4シートの学習表、10行の全要素一覧を確認しています。小数精度・混在テキストの空白・シート分割・全件にまたがる列数上限も検証対象です。
 
-同じ試験では、10万件・3項目の学習表（1,588,598バイト）を型判定から保存まで9.89秒で生成しました。XML読込23.56秒は別測定です。1/10/100/500MiBと1001001要素の試験も成功し、測定プロセス全体の累積Peak Working Setは64,958,464バイト（約62.0MiB）でした。共有CIでの合成データ単回測定であり、実データの処理時間や上限を保証しません。記録は `validation/python-ml-windows-performance.json` です。小数精度と混在テキストの空白保持を修正した版も別途再検証します。
+10万件・3項目の学習表（1,588,598バイト）を型判定から保存まで20.48秒で生成しました。XML読込32.94秒は別測定です。1/10/100/500MiBと1001001要素の試験も成功し、測定プロセス全体の累積Peak Working Setは64,303,104バイト（約61.3MiB）でした。共有CIでの合成データ単回測定であり、実データの処理時間や上限を保証しません。記録は `validation/python-ml-windows-performance.json` です。
+
+[手順書撮影・配布ビルド（7a25617）](https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions/runs/40510051164)でも52件と同梱EXEの検証が成功し、実画面12枚を手順書へ反映しました。検索3件・比較120→150を画面内に表示し、800×600の操作例を追加しています。自己検証記録は `validation/python-ml-windows-selftest.json` です。
 
 独立したopenpyxl読込で4シート・学習データ4行6列、数値・真偽値・空欄・先頭ゼロ・数式に似た文字列、ZIP/OOXML/リレーション、固定行・フィルターを確認しました。数式・セルエラー・外部リンク・VBA・名前付き範囲・テーブル・グラフは0件です。LibreOfficeで全4シート・全8ページをPDF化して目視し、元のXLSXは上書きしていません。横に広い表は印刷時に複数ページに分かれます。記録は `validation/python-ml-export-validation.json` です。Microsoft Excel本体での再オープンは未確認です。
+
+HTML手順書と単独HTML版を1440×1000のブラウザで表示し、12画像、章目次、画像拡大・Escで閉じる操作、横方向のはみ出しがないことを確認しました。
+
+CIには既存のupload-artifact ActionについてNode.js 20非推奨、punycode/url.parse非推奨の通知が出ます。GitHub側がNode.js 24で実行し、アップロードを含め全処理は成功しています。配布アプリの実行環境はPython 3.14.6で、この通知は利用者PCの起動要件に影響しません。

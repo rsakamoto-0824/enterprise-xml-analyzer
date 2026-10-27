@@ -226,6 +226,8 @@ def save_windows_canvas_png(canvas, target):
     # Flush native child paints after resize/scroll before copying the window pixels.
     redraw_flags = 0x0001 | 0x0004 | 0x0080 | 0x0100  # invalidate, erase, all children, update now
     user32.RedrawWindow(hwnd, None, None, redraw_flags)
+    canvas.update_idletasks()
+    gdi32.GdiFlush()
     rect = wintypes.RECT()
     user32.GetClientRect(hwnd, ctypes.byref(rect))
     width, height = rect.right, rect.bottom

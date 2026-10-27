@@ -30,6 +30,6 @@
     "AMBIGUOUS": 0
   },
   "note": "Unedited real Tk application captures; synthetic samples only. Save chooser substituted, actual XLSX writer executed.",
-  "source_commit": "ce81b3a82075a62040cefe486e330e91d8827bc2",
-  "github_actions_run": "https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions/runs/40507849201"
+  "source_commit": "7a25617a75684db2ed77d63e931ab4505b6d8d2b",
+  "github_actions_run": "https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions/runs/40510051164"
 }
