@@ -98,7 +98,7 @@ py -3.14 build_windows.py
 10万件の合成XML（300001要素）から3列の学習表を作成する性能試験を追加しました。Windowsのビルド・同梱EXE・画面撮影・大容量試験はGitHub Actionsで実施します。会社のWindows 11 / Server 2019とMicrosoft Excel本体での受入確認は、引き続き未確認です。
 
 
-[Windows Server 2022 / CPython 3.14.6の最終処理試験（c43539c）](https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions/runs/40509083405)で、52件すべてと同梱EXEの自己検証が成功しました。最小640×480の操作、4件・2項目・4シートの学習表、10行の全要素一覧を確認しています。小数精度・混在テキストの空白・シート分割・全件にまたがる列数上限も検証対象です。
+[Windows Server 2022 / CPython 3.14.6の大容量試験（c43539c）](https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions/runs/40509083405)で、52件すべてと同梱EXEの自己検証が成功しました。最小640×480の操作、4件・2項目・4シートの学習表、10行の全要素一覧を確認しています。小数精度・混在テキストの空白・シート分割・全件にまたがる列数上限も検証対象です。
 
 10万件・3項目の学習表（1,588,598バイト）を型判定から保存まで20.48秒で生成しました。XML読込32.94秒は別測定です。1/10/100/500MiBと1001001要素の試験も成功し、測定プロセス全体の累積Peak Working Setは64,303,104バイト（約61.3MiB）でした。共有CIでの合成データ単回測定であり、実データの処理時間や上限を保証しません。記録は `validation/python-ml-windows-performance.json` です。
 
@@ -109,3 +109,6 @@ py -3.14 build_windows.py
 HTML手順書と単独HTML版を1440×1000のブラウザで表示し、12画像、章目次、画像拡大・Escで閉じる操作、横方向のはみ出しがないことを確認しました。
 
 CIには既存のupload-artifact ActionについてNode.js 20非推奨、punycode/url.parse非推奨の通知が出ます。GitHub側がNode.js 24で実行し、アップロードを含め全処理は成功しています。配布アプリの実行環境はPython 3.14.6で、この通知は利用者PCの起動要件に影響しません。
+
+
+長い項目名の短縮結果がXML内の既存名と一致するケースも追加検証しています。列名を連番で確定し、同じ名前を繰り返して処理が終わらなくなることを防ぎます。52件の検証にこのケースを含めています。修正（34bf820）を含むWindows機能・同梱EXE・大容量試験の結果は[Windows検証](https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions/runs/40519288132)に記録されます。
