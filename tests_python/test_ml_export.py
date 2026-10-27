@@ -71,10 +71,11 @@ class MLExportTests(unittest.TestCase):
         self.assertEqual(plan.features[0].type, "string")
 
     def test_namespace_identity_mixed_text_and_nested_alignment(self):
-        self.parse('<r xmlns:a="urn:a" xmlns:b="urn:b"><n>before<a:v a:id="001">2</a:v>after<b:v>3</b:v><x><t>4</t><t>5</t></x><x><t>6</t></x></n><n><a:v>7</a:v></n></r>')
+        self.parse('<r xmlns:a="urn:a" xmlns:b="urn:b"><n>before<![CDATA[ ]]><a:v a:id="001">2</a:v>after<b:v>3</b:v><x><t>4</t><t>5</t></x><x><t>6</t></x></n><n>\n  <a:v>7</a:v>\n</n></r>')
         plan = plan_export(self.store)
         rows = [dict(zip(r.headers, r.cells)) for r in matrix_rows(self.store, plan)]
-        self.assertEqual(rows[0]["#text"], "beforeafter")
+        self.assertEqual(rows[0]["#text"], "before after")
+        self.assertIsNone(rows[1]["#text"])
         self.assertEqual(rows[0]["{urn%3Aa}v/@{urn%3Aa}id"], "001")
         self.assertEqual(rows[0]["{urn%3Ab}v"], 3)
         self.assertEqual(rows[0]["x[1]/t[2]"], 5)

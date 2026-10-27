@@ -141,7 +141,7 @@ def flatten_record(store, record, task, repeated):
     def finish():
         context = stack.pop()
         node, key, text = context
-        if text or node["elements"] == 1:
+        if text.strip() or node["elements"] == 1:
             text_key = key if key and node["elements"] == 1 else key + (("#text", 0),)
             put(text_key, text if text.strip() else None)
 
@@ -157,8 +157,6 @@ def flatten_record(store, record, task, repeated):
                 put(key + (("@" + name, 0),), value)
             stack.append([node, key, ""])
         elif node["kind"] in ("text", "cdata") and stack:
-            if not node["text"].strip() and stack[-1][0]["elements"] > 1:
-                continue
             value = stack[-1][2] + node["text"]
             check_cell(value)
             stack[-1][2] = value
