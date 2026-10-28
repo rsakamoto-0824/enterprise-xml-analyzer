@@ -980,10 +980,13 @@ class Application:
             return
         clear_tree(self.table_preview)
         columns = tuple(f"c{i}" for i in range(len(result["headers"])))
-        self.table_preview.configure(columns=columns)
+        visible = tuple(column for column, name in zip(columns, result["headers"])
+                        if result["orientation"] != LONG or name not in ("ファイルID", "要素番号"))
+        self.table_preview.configure(columns=columns, displaycolumns=visible)
+        widths = {"元ファイル": 150, "ファイルID": 100, "ノード": 180, "項目名": 160, "値": 180}
         for column, name in zip(columns, result["headers"]):
             self.table_preview.heading(column, text=name)
-            self.table_preview.column(column, width=180, minwidth=60, stretch=False)
+            self.table_preview.column(column, width=widths.get(name, 150), minwidth=60, stretch=False)
         for row in result["rows"]:
             self.table_preview.insert("", "end", values=[display(value)[:80].replace("\n", "↵") for value in row])
         count = f'・{result["columns"]:,}項目' if result["columns"] is not None else ""
