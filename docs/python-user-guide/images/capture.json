@@ -5,6 +5,8 @@
   "screenshots": [
     "01-start.png",
     "02-loaded.png",
+    "14-learning-export.png",
+    "13-long-export.png",
     "11-simple-export.png",
     "12-resize.png",
     "03-tree.png",
@@ -20,6 +22,11 @@
   "all_element_rows": 26,
   "ml_records": 6,
   "ml_features": 4,
+  "table_elements": 26,
+  "table_values": 32,
+  "table_wide_rows": 2,
+  "table_wide_columns": 16,
+  "table_long_rows": 32,
   "resize": "800x600",
   "comparison_counts": {
     "ADDED": 0,
@@ -30,6 +37,6 @@
     "AMBIGUOUS": 0
   },
   "note": "Unedited real Tk application captures; synthetic samples only. Save chooser substituted, actual XLSX writer executed.",
-  "source_commit": "7a25617a75684db2ed77d63e931ab4505b6d8d2b",
-  "github_actions_run": "https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions/runs/40510051164"
+  "source_commit": "dc7769e9044dd0d1482bd83f74fcc02d0cd8a8a1",
+  "github_actions_run": "https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions/runs/40673537446"
 }

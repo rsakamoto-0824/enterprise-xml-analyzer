@@ -1,0 +1,66 @@
+{
+  "status": "PASS",
+  "python": "3.14.6 generator; independent Python 3.12 openpyxl 3.1.5 reader",
+  "files": {
+    "wide": {
+      "sheets": [
+        "全要素_横持ち_1",
+        "項目一覧",
+        "出典",
+        "出力情報"
+      ],
+      "data_rows": 2,
+      "data_columns": 13,
+      "sheet_dimensions": {
+        "全要素_横持ち_1": "A1:M3",
+        "項目一覧": "A1:K12",
+        "出典": "A1:C3",
+        "出力情報": "A1:B13"
+      },
+      "formulas": 0,
+      "cell_errors": 0,
+      "external_links": 0,
+      "vba": false,
+      "defined_names": 0,
+      "tables": 0,
+      "charts": 0,
+      "ZIP_OOXML_relationships_content_types": "PASS",
+      "literal_values_whitespace_repeats_ids": "PASS",
+      "freeze_filter": "PASS"
+    },
+    "long": {
+      "sheets": [
+        "全要素_縦持ち",
+        "出典",
+        "出力情報"
+      ],
+      "data_rows": 11,
+      "data_columns": 10,
+      "sheet_dimensions": {
+        "全要素_縦持ち": "A1:J12",
+        "出典": "A1:C3",
+        "出力情報": "A1:B13"
+      },
+      "formulas": 0,
+      "cell_errors": 0,
+      "external_links": 0,
+      "vba": false,
+      "defined_names": 0,
+      "tables": 0,
+      "charts": 0,
+      "ZIP_OOXML_relationships_content_types": "PASS",
+      "literal_values_whitespace_repeats_ids": "PASS",
+      "freeze_filter": "PASS"
+    }
+  },
+  "excel_reopen": "NOT_VERIFIED: Microsoft Excel is unavailable; company Windows 11 / Server 2019 acceptance remains pending.",
+  "visual_check": {
+    "status": "PASS",
+    "method": "LibreOffice PDF export of original XLSX, all sheets and all pages rendered and visually checked; source XLSX not modified",
+    "sheets": 7,
+    "pages": 14,
+    "wide_pages": 9,
+    "long_pages": 5,
+    "note": "Wide tables print across horizontal pages; Excel horizontal scrolling is available. No Microsoft Excel compatibility claim is based on LibreOffice."
+  }
+}
