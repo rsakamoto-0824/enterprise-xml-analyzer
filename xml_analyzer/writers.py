@@ -114,7 +114,11 @@ def write_xlsx(target, rows, template, task=None):
                     handles[key] = state["path"].open("a", encoding="utf-8", newline="")
                 state["rows"] += 1
                 number = state["rows"] + int(template.header)
-                handles[key].write(f'<row r="{number}">' + "".join(cell_xml(v, column_letter(i + 1) + str(number)) for i, v in enumerate(row.cells)) + '</row>')
+                handle = handles[key]
+                handle.write(f'<row r="{number}">')
+                for index, value in enumerate(row.cells, 1):
+                    handle.write(cell_xml(value, column_letter(index) + str(number)))
+                handle.write('</row>')
                 if total % 500 == 0:
                     task.progress("Excel生成", total, 0)
         finally:

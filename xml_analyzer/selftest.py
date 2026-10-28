@@ -79,7 +79,7 @@ def self_test(screenshot_dir=None):
             app.ml_target.set("v")
             learning_workbook = base / "learning.xlsx"
             with patch("xml_analyzer.gui.filedialog.asksaveasfilename", return_value=str(learning_workbook)):
-                app.simple_export_button.invoke()
+                app.ml_export_button.invoke()
             deadline = time.monotonic() + 30
             while app.task:
                 root.update()
@@ -89,6 +89,28 @@ def self_test(screenshot_dir=None):
             with zipfile.ZipFile(learning_workbook) as archive:
                 assert archive.read("xl/workbook.xml").decode().count('<sheet ') == 4
                 assert '<f>' not in archive.read("xl/worksheets/sheet1.xml").decode()
+            app.header_paths.insert("1.0", "/r/n/v")
+            for orientation, rows in (("縦持ち", 8), ("横持ち", 4)):
+                app.table_orientation.set(orientation)
+                app.preview_all_table()
+                deadline = time.monotonic() + 30
+                while app.task:
+                    root.update()
+                    assert time.monotonic() < deadline, "Whole table preview timed out"
+                    time.sleep(0.01)
+                assert len(app.table_preview.get_children()) == rows
+                with patch("xml_analyzer.gui.filedialog.asksaveasfilename", return_value=str(base / (orientation + ".xlsx"))):
+                    app.simple_export_button.invoke()
+                deadline = time.monotonic() + 30
+                while app.task:
+                    root.update()
+                    assert time.monotonic() < deadline, "Whole table save timed out"
+                    time.sleep(0.01)
+                assert app.last_result["elements"] == 10 and app.last_result["values"] == 14
+                assert app.last_result["data_rows"] == rows
+                if orientation == "横持ち":
+                    assert app.last_result["columns"] == 2
+                assert app.last_result["header_groups"] == 4 and app.last_result["header_values"] == 4
             app.set_file(ids[0])
             root.update()
             assert len(app.graph.points) > 0
@@ -110,6 +132,7 @@ def self_test(screenshot_dir=None):
                     assert destination.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
                     screenshots.append(name)
                 app.tabs.select(app.pages["Excel出力"])
+                app.pages["Excel出力"].canvas.yview_moveto(0)
                 root.update()
                 name = "python-selftest-simple.png"
                 save_windows_canvas_png(root, Path(screenshot_dir) / name)
@@ -127,6 +150,7 @@ def self_test(screenshot_dir=None):
                     "frozen": bool(getattr(sys, "frozen", False)), "files": 2,
                     "modified": result["counts"]["MODIFIED"], "xlsx_rows": exported["rows"], "all_element_rows": 10,
                     "ml_records": 4, "ml_features": 2, "ml_sheets": 4, "minimum_window": "640x480",
+                    "table_elements": 10, "table_values": 14, "table_wide_rows": 4, "table_wide_columns": 2, "table_long_rows": 8, "table_header_groups": 4, "table_header_values": 4,
                     "gui": "Tk application, background import, tree and canvas", "network": "blocked", "screenshots": screenshots}
             app.finish_close()
             app, root = None, None

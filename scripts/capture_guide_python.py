@@ -68,7 +68,24 @@ def main():
                 app.export_ml()
             wait()
             assert app.last_result["records"] == 6 and app.last_result["features"] == 4
-            capture("11-simple-export", "Excel出力")
+            app.tabs.select(app.pages["Excel出力"])
+            root.update()
+            app.pages["Excel出力"].reveal(app.ml_export_button)
+            capture("14-learning-export", "Excel出力")
+            for orientation in ("縦持ち", "横持ち"):
+                app.table_orientation.set(orientation)
+                app.preview_all_table()
+                wait()
+                target = Path(folder) / (orientation + ".xlsx")
+                with patch("xml_analyzer.gui.filedialog.asksaveasfilename", return_value=str(target)):
+                    app.simple_export_button.invoke()
+                wait()
+                assert app.last_result["elements"] == 26 and app.last_result["values"] == 32
+                assert app.last_result["data_rows"] == (30 if orientation == "縦持ち" else 6)
+                if orientation == "横持ち":
+                    assert app.last_result["columns"] == 5
+                app.pages["Excel出力"].reveal(app.table_preview)
+                capture("13-long-export" if orientation == "縦持ち" else "11-simple-export", "Excel出力")
             root.geometry("800x600+0+0")
             root.update()
             app.pages["Excel出力"].reveal(app.simple_export_button)
@@ -130,10 +147,41 @@ def main():
             assert target.is_file()
             capture("09-saved", "Excel出力")
         capture("10-settings", "設定")
+        app.clear_workspace()
+        wait()
+        app.import_files([str(SAMPLES / 'sample-with-headers.xml')])
+        wait()
+        app.header_paths.insert('1.0', '/root/header\n/root/record/header')
+        root.update()
+        app.tabs.select(app.pages['Excel出力'])
+        app.pages['Excel出力'].canvas.yview_moveto(0)
+        root.update()
+        capture('15-header-ranges', 'Excel出力')
+        for orientation, name in (('横持ち', '16-header-wide'), ('縦持ち', '19-header-long')):
+            app.table_orientation.set(orientation)
+            app.table_view.set('中身のデータ')
+            app.preview_all_table()
+            wait()
+            assert app.last_result['data_records'] == 2 and app.last_result['header_groups'] == 3
+            app.pages['Excel出力'].reveal(app.table_preview)
+            capture(name, 'Excel出力')
+        for view, name in (('ヘッダー情報', '17-header-info'), ('紐づけ', '18-header-links')):
+            app.table_view.set(view)
+            app.table_view.event_generate('<<ComboboxSelected>>')
+            root.update()
+            assert len(app.table_preview.get_children()) == (7 if view == 'ヘッダー情報' else 4)
+            capture(name, 'Excel出力')
+        with tempfile.TemporaryDirectory(prefix='xml-guide-headers-') as folder:
+            with patch('xml_analyzer.gui.filedialog.asksaveasfilename', return_value=str(Path(folder) / 'linked.xlsx')):
+                app.export_table()
+            wait()
+            assert app.last_result['header_groups'] == 3 and app.last_result['values'] == 17
         (OUTPUT / "capture.json").write_text(json.dumps({
             "platform": platform.platform(), "python": platform.python_version(),
             "tk": root.tk.call("info", "patchlevel"), "screenshots": captured,
             "sample_rows": 3, "all_element_rows": 26, "ml_records": 6, "ml_features": 4,
+            "table_elements": 26, "table_values": 32, "table_wide_rows": 6, "table_wide_columns": 5, "table_long_rows": 30,
+            "header_sample_records": 2, "header_sample_groups": 3, "header_sample_values": 17, "header_sample_links": 4,
             "resize": "800x600", "comparison_counts": counts,
             "note": "Unedited real Tk application captures; synthetic samples only. Save chooser substituted, actual XLSX writer executed."
         }, ensure_ascii=False, indent=2), encoding="utf-8")

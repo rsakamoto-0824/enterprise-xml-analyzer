@@ -1,0 +1,93 @@
+{
+  "status": "PASS",
+  "version": "2.4.0",
+  "reader": "Independent openpyxl 3.1.5 / Python 3.12",
+  "files": {
+    "wide": {
+      "sheets": [
+        "全要素_横持ち_1",
+        "項目一覧",
+        "ヘッダー",
+        "共通データ",
+        "データ一覧",
+        "紐づけ",
+        "出典",
+        "ヘッダー定義",
+        "出力情報"
+      ],
+      "dimensions": {
+        "全要素_横持ち_1": "A1:J3",
+        "項目一覧": "A1:K8",
+        "ヘッダー": "A1:K8",
+        "共通データ": "A1:K3",
+        "データ一覧": "A1:F3",
+        "紐づけ": "A1:E5",
+        "出典": "A1:E2",
+        "ヘッダー定義": "A1:C3",
+        "出力情報": "A1:B17"
+      },
+      "data_records": 2,
+      "header_groups": 3,
+      "header_values": 7,
+      "links": 4,
+      "all_parsed_element_and_attribute_values": 20,
+      "all_values_equal_XML_multiset": true,
+      "common_and_record_headers_join_to_correct_data": true,
+      "formulas": 0,
+      "cell_errors": 0,
+      "external_links": 0,
+      "vba": false,
+      "defined_names": 0,
+      "tables": 0,
+      "charts": 0,
+      "ZIP_OOXML_relationships_content_types": "PASS"
+    },
+    "long": {
+      "sheets": [
+        "全要素_縦持ち",
+        "ヘッダー",
+        "共通データ",
+        "データ一覧",
+        "紐づけ",
+        "出典",
+        "ヘッダー定義",
+        "出力情報"
+      ],
+      "dimensions": {
+        "全要素_縦持ち": "A1:K12",
+        "ヘッダー": "A1:K8",
+        "共通データ": "A1:K3",
+        "データ一覧": "A1:F3",
+        "紐づけ": "A1:E5",
+        "出典": "A1:E2",
+        "ヘッダー定義": "A1:C3",
+        "出力情報": "A1:B17"
+      },
+      "data_records": 2,
+      "header_groups": 3,
+      "header_values": 7,
+      "links": 4,
+      "all_parsed_element_and_attribute_values": 20,
+      "all_values_equal_XML_multiset": true,
+      "common_and_record_headers_join_to_correct_data": true,
+      "formulas": 0,
+      "cell_errors": 0,
+      "external_links": 0,
+      "vba": false,
+      "defined_names": 0,
+      "tables": 0,
+      "charts": 0,
+      "ZIP_OOXML_relationships_content_types": "PASS"
+    }
+  },
+  "excel_reopen": "NOT_VERIFIED: Microsoft Excel is unavailable; company Windows 11 / Server 2019 acceptance pending.",
+  "visual_check": {
+    "status": "PASS",
+    "method": "LibreOffice PDF export, one sheet per page for inspection; all pages rendered and visually checked; original XLSX not modified",
+    "sheets": 17,
+    "pages": 17,
+    "wide_pages": 9,
+    "long_pages": 8,
+    "note": "This checks all sheet content and layout; original Excel print pagination and Microsoft Excel reopen remain unverified."
+  }
+}

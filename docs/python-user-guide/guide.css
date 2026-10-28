@@ -23,3 +23,5 @@ tbody tr:nth-child(even) { background: #f8fafc; }
 #viewer-image { display: block; width: auto; max-width: none; height: auto; }
 .viewer-note { font-size: 12px; color: #52627a; margin-top: 10px; }
 @media print { .screenshot { break-inside: avoid; } .shot-zoom { cursor: default; } .download-link { color: #18365e; background: none; border: 1px solid #18365e; } dialog { display: none; } }
+
+.numbered-steps[start="2"] { counter-reset: steps 1; }

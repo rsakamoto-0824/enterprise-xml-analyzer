@@ -19,6 +19,7 @@ from xml_analyzer.ml_export import save_export
 from xml_analyzer.parser import parse_file
 from xml_analyzer.simple_export import all_element_rows, simple_template
 from xml_analyzer.storage import Store
+from xml_analyzer.table_export import LONG, WIDE, save_table
 from xml_analyzer.visualization import Graph
 from xml_analyzer.writers import write_csv, write_xlsx
 
@@ -46,7 +47,12 @@ def generate(path, scale, changed=False):
     with path.open("wb") as file:
         file.write(b"<Root>")
         elements, group = 1, 0
-        if scale == "ml":
+        if scale == "table":
+            file.write(b'<Header><Run>TEST</Run></Header>')
+            for index in range(20000):
+                file.write(f'<Item id="{index:06d}"><Value>{index}</Value></Item>'.encode())
+            elements += 40002
+        elif scale == "ml":
             for index in range(100000):
                 file.write(f'<Item id="{index:06d}"><temperature>{20 + index % 100 / 10}</temperature><class>{index % 3}</class></Item>'.encode())
             elements += 300000
@@ -74,11 +80,11 @@ def main():
     if sys.version_info[:3] != (3, 14, 6):
         raise SystemExit("Use CPython 3.14.6")
     parser = argparse.ArgumentParser()
-    parser.add_argument("--cases", default="1,10,100,500,million,ml")
+    parser.add_argument("--cases", default="1,10,100,500,million,ml,table")
     parser.add_argument("--output", type=Path, default=ROOT / "output/python-performance.json")
     args = parser.parse_args()
     cases = args.cases.split(",")
-    if any(c not in ("1", "10", "100", "500", "million", "ml") for c in cases):
+    if any(c not in ("1", "10", "100", "500", "million", "ml", "table") for c in cases):
         raise SystemExit("Invalid case")
     report = {"python": platform.python_version(), "platform": platform.platform(), "architecture": platform.machine(),
               "memory_scope": "Whole process lifetime peak RSS/working set, including SQLite and Tk; cumulative across cases", "results": []}
@@ -145,6 +151,21 @@ def main():
                 row["ml_records"] = saved["records"]
                 row["ml_features"] = saved["features"]
                 row["ml_bytes"] = saved["bytes"]
+            if scale == "table":
+                for orientation, key in ((WIDE, "table_wide"), (LONG, "table_long")):
+                    started = time.monotonic()
+                    saved = save_table(store, base / (key + ".xlsx"), orientation,
+                                       header_paths=['/Root/Header', '/Root/Item/Value'])
+                    row[key + "_seconds"] = time.monotonic() - started
+                    assert saved["elements"] == 40003 and saved["values"] == 60003
+                    assert saved["data_rows"] == (20000 if orientation == WIDE else 40000)
+                    assert saved["data_records"] == 20000 and saved["header_groups"] == 20001
+                    assert saved["header_values"] == 20002 and saved["columns"] == 2
+                    row['table_header_groups'] = saved['header_groups']
+                    row['table_header_values'] = saved['header_values']
+                    row['table_records'] = saved['data_records']
+                    row[key + "_rows"] = saved["data_rows"]
+                    row[key + "_bytes"] = saved["bytes"]
             started = time.monotonic()
             store.clear()
             row["cleanup_seconds"] = time.monotonic() - started

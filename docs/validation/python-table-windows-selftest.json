@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "python": "3.14.6",
+  "platform": "win32",
+  "architecture": "AMD64",
+  "tk": "8.6.15",
+  "frozen": true,
+  "files": 2,
+  "modified": 1,
+  "xlsx_rows": 4,
+  "all_element_rows": 10,
+  "ml_records": 4,
+  "ml_features": 2,
+  "ml_sheets": 4,
+  "minimum_window": "640x480",
+  "table_elements": 10,
+  "table_values": 14,
+  "table_wide_rows": 2,
+  "table_wide_columns": 7,
+  "table_long_rows": 14,
+  "gui": "Tk application, background import, tree and canvas",
+  "network": "blocked",
+  "screenshots": [
+    "python-selftest-window.png",
+    "python-selftest-graph.png",
+    "python-selftest-simple.png",
+    "python-selftest-resize.png"
+  ],
+  "source_commit": "f1818ebb66dff88d5ac57cb1b3bbaf64a3c33e81",
+  "github_actions_run": "https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions/runs/40672635728"
+}

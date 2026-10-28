@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root version="001">
+  <header><lot>LOT-001</lot><date>2026-10-28</date></header>
+  <record id="A"><header><unit>C</unit></header><temperature>20</temperature><pressure>5</pressure></record>
+  <record id="B"><header><unit>C</unit></header><temperature>25</temperature><pressure>6</pressure></record>
+</root>
