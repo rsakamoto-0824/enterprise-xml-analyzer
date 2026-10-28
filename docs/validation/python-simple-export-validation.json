@@ -1,0 +1,20 @@
+{
+  "date": "2026-10-27",
+  "workbook": "simple-all-elements.xlsx",
+  "independent_reader": "openpyxl",
+  "sheets": [
+    "全要素"
+  ],
+  "data_rows": 7,
+  "columns": 11,
+  "formulas": 0,
+  "cell_errors": 0,
+  "external_links": 0,
+  "vba": false,
+  "zip_and_xml": "PASS",
+  "leading_zeros": "PASS",
+  "formula_like_literal": "PASS",
+  "empty_elements": "PASS",
+  "windows_excel_reopen": "NOT_TESTED",
+  "visual_validation": "LibreOffice PDF: all 3 pages reviewed; source XLSX not overwritten"
+}

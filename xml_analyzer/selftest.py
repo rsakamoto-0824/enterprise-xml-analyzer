@@ -8,6 +8,7 @@ import tempfile
 import time
 import tkinter as tk
 import zipfile
+from unittest.mock import patch
 
 from .comparison import compare
 from .extraction import extract
@@ -54,6 +55,40 @@ def self_test(screenshot_dir=None):
             with zipfile.ZipFile(workbook) as archive:
                 text = archive.read("xl/worksheets/sheet1.xml").decode("utf-8")
                 assert '<f>' not in text and '001' in text and 'りんご' in text
+            simple_workbook = base / "all-elements.xlsx"
+            with patch("xml_analyzer.gui.filedialog.asksaveasfilename", return_value=str(simple_workbook)):
+                app.export_all_elements()
+            deadline = time.monotonic() + 30
+            while app.task:
+                root.update()
+                if time.monotonic() > deadline:
+                    raise AssertionError("Simple export did not complete")
+                time.sleep(0.01)
+            assert app.last_result["rows"] == 10
+            with zipfile.ZipFile(simple_workbook) as archive:
+                text = archive.read("xl/worksheets/sheet1.xml").decode("utf-8")
+                assert '<f>' not in text and '001' in text and '全要素' in archive.read('xl/workbook.xml').decode()
+            app.preview_ml()
+            deadline = time.monotonic() + 30
+            while app.task:
+                root.update()
+                assert time.monotonic() < deadline, "ML preview timed out"
+                time.sleep(0.01)
+            assert app.ml_record_path.get() == "/r/n"
+            assert len(app.ml_preview.get_children()) == 4
+            app.ml_target.set("v")
+            learning_workbook = base / "learning.xlsx"
+            with patch("xml_analyzer.gui.filedialog.asksaveasfilename", return_value=str(learning_workbook)):
+                app.simple_export_button.invoke()
+            deadline = time.monotonic() + 30
+            while app.task:
+                root.update()
+                assert time.monotonic() < deadline, "ML save timed out"
+                time.sleep(0.01)
+            assert app.last_result["records"] == 4 and app.last_result["features"] == 2
+            with zipfile.ZipFile(learning_workbook) as archive:
+                assert archive.read("xl/workbook.xml").decode().count('<sheet ') == 4
+                assert '<f>' not in archive.read("xl/worksheets/sheet1.xml").decode()
             app.set_file(ids[0])
             root.update()
             assert len(app.graph.points) > 0
@@ -74,10 +109,24 @@ def self_test(screenshot_dir=None):
                     save_windows_canvas_png(widget, destination)
                     assert destination.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
                     screenshots.append(name)
+                app.tabs.select(app.pages["Excel出力"])
+                root.update()
+                name = "python-selftest-simple.png"
+                save_windows_canvas_png(root, Path(screenshot_dir) / name)
+                screenshots.append(name)
+                root.geometry("640x480+0+0")
+                root.update()
+                assert app.navigation.winfo_ismapped()
+                app.pages["Excel出力"].reveal(app.simple_export_button)
+                root.update()
+                name = "python-selftest-resize.png"
+                save_windows_canvas_png(root, Path(screenshot_dir) / name)
+                screenshots.append(name)
             info = {"status": "PASS", "python": platform.python_version(), "platform": sys.platform,
                     "architecture": platform.machine(), "tk": root.tk.call("info", "patchlevel"),
                     "frozen": bool(getattr(sys, "frozen", False)), "files": 2,
-                    "modified": result["counts"]["MODIFIED"], "xlsx_rows": exported["rows"],
+                    "modified": result["counts"]["MODIFIED"], "xlsx_rows": exported["rows"], "all_element_rows": 10,
+                    "ml_records": 4, "ml_features": 2, "ml_sheets": 4, "minimum_window": "640x480",
                     "gui": "Tk application, background import, tree and canvas", "network": "blocked", "screenshots": screenshots}
             app.finish_close()
             app, root = None, None

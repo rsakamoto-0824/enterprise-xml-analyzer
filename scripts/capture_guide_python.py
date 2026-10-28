@@ -53,16 +53,41 @@ def main():
         app.import_files([str(SAMPLES / name) for name in ("sample-before.xml", "sample-after.xml")])
         wait()
         capture("02-loaded", "XML読込")
+        with tempfile.TemporaryDirectory(prefix="xml-guide-simple-") as folder:
+            target = Path(folder) / "all-elements.xlsx"
+            with patch("xml_analyzer.gui.filedialog.asksaveasfilename", return_value=str(target)):
+                app.export_all_elements()
+            wait()
+            assert app.last_result["rows"] == 26
+            app.preview_ml()
+            wait()
+            assert app.ml_record_path.get() == "/catalog/item"
+            app.ml_target.set("price")
+            target = Path(folder) / "learning.xlsx"
+            with patch("xml_analyzer.gui.filedialog.asksaveasfilename", return_value=str(target)):
+                app.export_ml()
+            wait()
+            assert app.last_result["records"] == 6 and app.last_result["features"] == 4
+            capture("11-simple-export", "Excel出力")
+            root.geometry("800x600+0+0")
+            root.update()
+            app.pages["Excel出力"].reveal(app.simple_export_button)
+            capture("12-resize", "Excel出力")
+            root.geometry(f"{width}x{height}+0+0")
+            app.pages["Excel出力"].canvas.yview_moveto(0)
+            root.update()
         before = next(f["id"] for f in app.files if f["name"] == "sample-before.xml")
         app.set_file(before)
         item = next(n for n in app.store.nodes(before, path="/catalog/item"))
         app.jump_to_node(item)
+        app.detail.yview_moveto(1)
         capture("03-tree", "構造ビュー")
         app.search_text.set("price")
         app.search_exact.set(True)
         app.start_search()
         wait()
         assert len(app.search_results.get_children()) == 3
+        app.pages["構造ビュー"].canvas.yview_moveto(1)
         capture("04-search", "構造ビュー")
         app.jump_to_node(item)
         app.focus_graph()
@@ -74,6 +99,7 @@ def main():
         first = app.differences.get_children()[0]
         app.differences.selection_set(first)
         app.show_diff_detail()
+        app.pages["XML比較"].canvas.yview_moveto(1)
         capture("06-compare", "XML比較")
         counts = app.comparison["counts"]
         app.jump_to_node(item)
@@ -88,6 +114,7 @@ def main():
             app.column_fields["type"].set("number" if column.path in ("price", "stock") else "string")
             app.apply_column()
         app.export_scroll.yview_moveto(0)
+        app.pages["Excel出力"].reveal(app.export_scroll)
         capture("07-columns", "Excel出力")
         app.start_preview()
         wait()
@@ -106,7 +133,8 @@ def main():
         (OUTPUT / "capture.json").write_text(json.dumps({
             "platform": platform.platform(), "python": platform.python_version(),
             "tk": root.tk.call("info", "patchlevel"), "screenshots": captured,
-            "sample_rows": 3, "comparison_counts": counts,
+            "sample_rows": 3, "all_element_rows": 26, "ml_records": 6, "ml_features": 4,
+            "resize": "800x600", "comparison_counts": counts,
             "note": "Unedited real Tk application captures; synthetic samples only. Save chooser substituted, actual XLSX writer executed."
         }, ensure_ascii=False, indent=2), encoding="utf-8")
     finally:

@@ -15,7 +15,9 @@ sys.path.insert(0, str(ROOT))
 from xml_analyzer.comparison import compare, search
 from xml_analyzer.extraction import extract
 from xml_analyzer.models import Column, DiffOptions, Template
+from xml_analyzer.ml_export import save_export
 from xml_analyzer.parser import parse_file
+from xml_analyzer.simple_export import all_element_rows, simple_template
 from xml_analyzer.storage import Store
 from xml_analyzer.visualization import Graph
 from xml_analyzer.writers import write_csv, write_xlsx
@@ -44,7 +46,11 @@ def generate(path, scale, changed=False):
     with path.open("wb") as file:
         file.write(b"<Root>")
         elements, group = 1, 0
-        if scale == "million":
+        if scale == "ml":
+            for index in range(100000):
+                file.write(f'<Item id="{index:06d}"><temperature>{20 + index % 100 / 10}</temperature><class>{index % 3}</class></Item>'.encode())
+            elements += 300000
+        elif scale == "million":
             for _ in range(1000):
                 file.write(b"<Group>" + b"<Item/>" * 1000 + b"</Group>")
                 elements += 1001
@@ -68,11 +74,11 @@ def main():
     if sys.version_info[:3] != (3, 14, 6):
         raise SystemExit("Use CPython 3.14.6")
     parser = argparse.ArgumentParser()
-    parser.add_argument("--cases", default="1,10,100,500,million")
+    parser.add_argument("--cases", default="1,10,100,500,million,ml")
     parser.add_argument("--output", type=Path, default=ROOT / "output/python-performance.json")
     args = parser.parse_args()
     cases = args.cases.split(",")
-    if any(c not in ("1", "10", "100", "500", "million") for c in cases):
+    if any(c not in ("1", "10", "100", "500", "million", "ml") for c in cases):
         raise SystemExit("Invalid case")
     report = {"python": platform.python_version(), "platform": platform.platform(), "architecture": platform.machine(),
               "memory_scope": "Whole process lifetime peak RSS/working set, including SQLite and Tk; cumulative across cases", "results": []}
@@ -121,6 +127,24 @@ def main():
                     row[format + "_seconds"] = time.monotonic() - started
                     row[format + "_rows"] = saved["rows"]
                     row[format + "_bytes"] = saved["bytes"]
+            if scale in ("100", "million"):
+                started = time.monotonic()
+                all_rows = all_element_rows(store)
+                saved = write_xlsx(base / "all-elements.xlsx", all_rows, simple_template())
+                row["simple_export_seconds"] = time.monotonic() - started
+                # The 100MiB comparison case has loaded both synthetic XMLs.
+                expected_rows = expected * (2 if scale == "100" else 1)
+                assert saved["rows"] == expected_rows
+                row["simple_export_rows"] = saved["rows"]
+                row["simple_export_bytes"] = saved["bytes"]
+            if scale == "ml":
+                started = time.monotonic()
+                saved = save_export(store, base / "learning.xlsx", target="class")
+                row["ml_seconds"] = time.monotonic() - started
+                assert saved["records"] == 100000 and saved["features"] == 3
+                row["ml_records"] = saved["records"]
+                row["ml_features"] = saved["features"]
+                row["ml_bytes"] = saved["bytes"]
             started = time.monotonic()
             store.clear()
             row["cleanup_seconds"] = time.monotonic() - started

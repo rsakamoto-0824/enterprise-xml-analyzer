@@ -9,6 +9,7 @@ from xml.sax.saxutils import escape, quoteattr
 import zlib
 
 from .models import AppError, MAX_GRAPH_NODES
+from .layout import FlowFrame
 from .writers import atomic_target
 
 
@@ -61,13 +62,13 @@ class Graph(ttk.Frame):
         self.collapsed = set()
         self.horizontal = True
         self.points, self.edges = [], []
-        bar = ttk.Frame(self)
+        bar = FlowFrame(self)
         bar.pack(fill="x", pady=6)
         for text, action in (("縦／横", self.toggle_direction), ("全体を表示", self.reset),
                              ("拡大", lambda: self.zoom(1.2)), ("縮小", lambda: self.zoom(1 / 1.2)),
                              ("SVG保存", self.save_svg), ("PNG保存", self.save_png)):
             ttk.Button(bar, text=text, command=action).pack(side="left", padx=3)
-        self.notice = ttk.Label(self, text="ノードを選択すると詳細へ移動。ダブルクリックで開閉。ドラッグで移動。")
+        self.notice = ttk.Label(self, text="ノードを選択すると詳細へ移動。ダブルクリックで開閉。ドラッグで移動。", wraplength=900)
         self.notice.pack(anchor="w", pady=4)
         box = ttk.Frame(self)
         box.pack(fill="both", expand=True)
@@ -211,7 +212,9 @@ def save_windows_canvas_png(canvas, target):
         getattr(gdi32, name).restype = wintypes.HANDLE
     user32.GetDC.argtypes = [wintypes.HWND]
     user32.GetClientRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
+    user32.ClientToScreen.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.POINT)]
     user32.ReleaseDC.argtypes = [wintypes.HWND, wintypes.HDC]
+    user32.RedrawWindow.argtypes = [wintypes.HWND, ctypes.c_void_p, wintypes.HANDLE, wintypes.UINT]
     gdi32.CreateCompatibleDC.argtypes = [wintypes.HDC]
     gdi32.CreateCompatibleBitmap.argtypes = [wintypes.HDC, ctypes.c_int, ctypes.c_int]
     gdi32.SelectObject.argtypes = [wintypes.HDC, wintypes.HANDLE]
@@ -221,17 +224,31 @@ def save_windows_canvas_png(canvas, target):
     gdi32.GetDIBits.argtypes = [wintypes.HDC, wintypes.HBITMAP, wintypes.UINT, wintypes.UINT, ctypes.c_void_p, ctypes.c_void_p, wintypes.UINT]
     canvas.update_idletasks()
     hwnd = canvas.winfo_id()
+    # Flush native child paints after resize/scroll before copying the window pixels.
+    redraw_flags = 0x0001 | 0x0004 | 0x0080 | 0x0100  # invalidate, erase, all children, update now
+    user32.RedrawWindow(hwnd, None, None, redraw_flags)
+    canvas.update_idletasks()
+    gdi32.GdiFlush()
     rect = wintypes.RECT()
     user32.GetClientRect(hwnd, ctypes.byref(rect))
     width, height = rect.right, rect.bottom
     if not 1 <= width <= 8000 or not 1 <= height <= 8000:
         raise AppError("PNG_SIZE: グラフ表示サイズが保存上限を超えています。")
-    source = user32.GetDC(hwnd)
+    origin = wintypes.POINT()
+    source_window = hwnd
+    if isinstance(canvas, (tk.Tk, tk.Toplevel)):
+        # The composited desktop avoids stale child-window pixels in a root DC.
+        source_window = None
+        if not user32.ClientToScreen(hwnd, ctypes.byref(origin)):
+            raise OSError()
+    source = user32.GetDC(source_window)
+    if not source:
+        raise OSError()
     dest = gdi32.CreateCompatibleDC(source)
     bitmap = gdi32.CreateCompatibleBitmap(source, width, height)
     old = gdi32.SelectObject(dest, bitmap)
     try:
-        if not gdi32.BitBlt(dest, 0, 0, width, height, source, 0, 0, 0x00CC0020):
+        if not gdi32.BitBlt(dest, 0, 0, width, height, source, origin.x, origin.y, 0x00CC0020):
             raise OSError()
         gdi32.SelectObject(dest, old)
         header = struct.pack("<IiiHHIIiiII", 40, width, -height, 1, 32, 0, 0, 0, 0, 0, 0)
@@ -256,4 +273,4 @@ def save_windows_canvas_png(canvas, target):
         gdi32.SelectObject(dest, old)
         gdi32.DeleteObject(bitmap)
         gdi32.DeleteDC(dest)
-        user32.ReleaseDC(hwnd, source)
+        user32.ReleaseDC(source_window, source)

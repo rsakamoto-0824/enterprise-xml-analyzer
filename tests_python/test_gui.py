@@ -9,6 +9,8 @@ import time
 import tkinter as tk
 import unittest
 from unittest.mock import patch
+from xml.etree import ElementTree as ET
+import zipfile
 
 from xml_analyzer.gui import Application
 from xml_analyzer.models import Column, Template
@@ -79,6 +81,38 @@ class GuiTests(unittest.TestCase):
             self.app.export_output("xlsx")
         self.wait()
         self.assertTrue(target.is_file())
+
+    def test_simple_export_uses_every_file_and_ignores_detailed_settings(self):
+        self.load('<r><n id="001">=1+1</n><empty/></r>', 'a.xml')
+        self.load('<root><value>日本語</value></root>', 'b.xml')
+        self.app.template = Template(record_path="/does-not-exist", columns=[], filters=[{"path": ".", "op": "equals", "value": "no-match"}])
+        original = self.app.template.to_json()
+        self.app.export_files.selection_clear(0, "end")
+        self.app.export_files.selection_set(1)
+        target = self.base / "全要素"
+        with patch("xml_analyzer.gui.filedialog.asksaveasfilename", return_value=str(target)):
+            self.app.all_elements_button.invoke()
+        self.assertIsNotNone(self.app.task)
+        self.wait()
+        self.assertEqual(self.app.template.to_json(), original)
+        self.assertIn("2ファイル・5要素・5行", self.app.status.get())
+        with zipfile.ZipFile(target.with_suffix('.xlsx')) as z:
+            tree = ET.fromstring(z.read("xl/worksheets/sheet1.xml"))
+            self.assertEqual(len(tree.findall('.//{*}row')), 6)
+            self.assertEqual(tree.findall('.//{*}f'), [])
+            text = z.read("xl/worksheets/sheet1.xml").decode()
+            for value in ('a.xml', 'b.xml', '001', '=1+1', '日本語', 'empty'):
+                self.assertIn(value, text)
+
+    def test_simple_export_requires_xml_and_allows_save_dialog_cancel(self):
+        with patch("xml_analyzer.gui.filedialog.asksaveasfilename") as choose:
+            self.app.export_all_elements()
+            choose.assert_not_called()
+        self.assertIn("FILES_EMPTY", self.app.status.get())
+        self.load()
+        with patch("xml_analyzer.gui.filedialog.asksaveasfilename", return_value=""):
+            self.app.export_all_elements()
+        self.assertIsNone(self.app.task)
 
     def test_paging_tree_graph_svg_and_search_jump(self):
         file_id = self.load('<r>' + '<n>value</n>' * 600 + '</r>')
@@ -155,6 +189,7 @@ class GuiTests(unittest.TestCase):
         self.root.deiconify()
         self.app.tabs.select(self.app.pages["Excel出力"])
         self.root.update()
+        self.app.pages["Excel出力"].reveal(self.app.export_scroll)
         self.app.export_scroll.yview_moveto(1)
         self.root.update()
         def find(widget):
@@ -171,6 +206,65 @@ class GuiTests(unittest.TestCase):
         self.assertGreaterEqual(button.winfo_rooty(), top)
         self.assertLess(button.winfo_rooty() + button.winfo_height(), top + self.app.export_scroll.winfo_height())
         self.assertLessEqual(self.app.cancel_button.winfo_rooty() + self.app.cancel_button.winfo_height(), self.root.winfo_rooty() + self.root.winfo_height())
+        self.app.pages["Excel出力"].reveal(self.app.simple_export_button)
+        self.assertGreater(self.app.simple_export_button.winfo_rooty(), self.app.pages["Excel出力"].canvas.winfo_rooty())
+
+    def test_ml_preview_override_target_and_save_ignores_detailed_settings(self):
+        self.load('<r><n id="001"><x>1</x><y>A</y></n><n id="002"><x>2</x><y>B</y></n></r>')
+        self.load('<r><n id="003"><x>3</x><y>A</y></n></r>', 'b.xml')
+        self.app.template = Template(record_path="/wrong", columns=[])
+        self.app.preview_ml()
+        self.wait()
+        self.assertEqual(self.app.ml_record_path.get(), "/r/n")
+        self.assertIn("/r/n", self.app.ml_record_choice.cget("values"))
+        self.assertEqual(len(self.app.ml_preview.get_children()), 3)
+        self.assertIn("y", self.app.ml_target.cget("values"))
+        self.app.ml_target.set("y")
+        target = self.base / "学習データ.xlsx"
+        with patch("xml_analyzer.gui.filedialog.asksaveasfilename", return_value=str(target)):
+            self.app.simple_export_button.invoke()
+        self.wait()
+        self.assertEqual(self.app.last_result["records"], 3)
+        self.assertIn("3件・3項目", self.app.status.get())
+        self.assertTrue(target.exists())
+        self.app.ml_record_path.set(self.app.ml_file_unit)
+        self.app.preview_ml()
+        self.wait()
+        self.assertEqual(len(self.app.ml_preview.get_children()), 2)
+        self.assertEqual(self.app.ml_target.get(), "未指定")
+        self.app.clear_workspace()
+        self.wait()
+        self.assertEqual(self.app.ml_target.get(), "未指定")
+        self.assertEqual(self.app.ml_preview.get_children(), ())
+
+    def test_resize_all_pages_and_wrapped_buttons_keep_state(self):
+        from tkinter import ttk
+        from xml_analyzer.layout import FlowFrame
+        self.load()
+        self.app.ml_target.set("remember-me")
+        self.root.deiconify()
+        def visit(widget):
+            yield widget
+            for child in widget.winfo_children():
+                yield from visit(child)
+        for width, height in ((640, 480), (800, 600), (1000, 650), (1440, 1000), (640, 480)):
+            self.root.geometry(f"{width}x{height}+0+0")
+            self.root.update()
+            self.assertEqual(bool(self.app.navigation.winfo_ismapped()), width < 900)
+            for name, page in self.app.pages.items():
+                self.app.page_choice.set(name)
+                self.app.page_choice.event_generate("<<ComboboxSelected>>")
+                self.root.update()
+                self.assertEqual(self.app.tabs.select(), str(page))
+                self.assertLessEqual(page.winfo_width(), self.root.winfo_width())
+                self.assertGreater(page.canvas.winfo_height(), 30)
+                for bar in (w for w in visit(page) if isinstance(w, FlowFrame)):
+                    for child in bar.winfo_children():
+                        self.assertGreaterEqual(child.winfo_x(), 0)
+                        self.assertLessEqual(child.winfo_x() + child.winfo_width(), bar.winfo_width() + 1)
+                        self.assertLessEqual(child.winfo_y() + child.winfo_height(), bar.winfo_height())
+            self.assertLessEqual(self.app.cancel_button.winfo_rooty() + self.app.cancel_button.winfo_height(), self.root.winfo_rooty() + self.root.winfo_height())
+            self.assertEqual(self.app.ml_target.get(), "remember-me")
 
     @unittest.skipUnless(sys.platform == "win32", "native WM_DROPFILES is Windows only")
     def test_windows_native_drop_unicode_paths(self):

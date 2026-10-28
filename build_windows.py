@@ -11,6 +11,8 @@ import sys
 import venv
 import zipfile
 
+from xml_analyzer import VERSION
+
 ROOT = Path(__file__).resolve().parent
 BUILD = ROOT / "build-python"
 ARTIFACTS = ROOT / "artifacts"
@@ -74,7 +76,7 @@ def main():
     result = json.loads(report_path.read_text(encoding="utf-8"))
     if result.get("status") != "PASS" or result.get("python") != "3.14.6" or not result.get("frozen"):
         raise SystemExit("Frozen runtime verification failed.")
-    manifest = {"app": "enterprise-xml-analyzer-python", "version": "2.0.0", "python": "3.14.6",
+    manifest = {"app": "enterprise-xml-analyzer-python", "version": VERSION, "python": "3.14.6",
                 "platform": platform.platform(), "pyinstaller": "6.22.3", "files": [], "source_sha256": {}}
     for source in sorted((ROOT / "xml_analyzer").glob("*.py")) + [ROOT / "run.py"]:
         manifest["source_sha256"][source.relative_to(ROOT).as_posix()] = hashlib.sha256(source.read_bytes()).hexdigest()

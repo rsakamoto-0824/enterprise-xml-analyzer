@@ -1,5 +1,6 @@
 from dataclasses import replace
 from datetime import datetime
+import gc
 import json
 from pathlib import Path
 import queue
@@ -10,11 +11,14 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 from . import VERSION
+from .layout import FlowFrame, ScrollablePage
+from .ml_export import preview_export, save_export
 from .comparison import compare, search
 from .extraction import candidate_columns, difference_rows, extract, preview
 from .models import (AppError, Cancelled, Column, DIFF_COLORS, DIFF_LABELS, DIFF_TYPES,
                      DiffOptions, MAX_VISIBLE_NODES, PAGE_SIZE, Task, Template)
 from .parser import parse_file
+from .simple_export import all_element_rows, simple_template
 from .storage import Store
 from .visualization import Graph, xml_fragment
 from .windows import install_file_drop
@@ -70,41 +74,54 @@ class Application:
         self.status = tk.StringVar(value="XMLファイルを選択、またはウインドウへドロップしてください。")
         self.current_file = tk.StringVar()
         self.root.title(f"Enterprise XML Analyzer {VERSION} — Python 3.14.6")
-        width = min(1320, max(980, self.root.winfo_screenwidth() - 60))
-        height = min(860, max(620, self.root.winfo_screenheight() - 100))
+        width = min(1320, max(640, self.root.winfo_screenwidth() - 60))
+        height = min(860, max(480, self.root.winfo_screenheight() - 100))
         self.root.geometry(f"{width}x{height}+20+20")
-        self.root.minsize(980, 620)
+        self.root.minsize(640, 480)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
         self.root.report_callback_exception = lambda kind, value, trace: self.report(value)
         self._style()
-        header = ttk.Frame(root, padding=(18, 14))
+        header = ttk.Frame(root, padding=(12, 8))
         header.pack(fill="x")
-        ttk.Label(header, text="Enterprise XML Analyzer", style="Title.TLabel").pack(side="left")
-        ttk.Label(header, text="  ローカルXMLワークスペース", style="Muted.TLabel").pack(side="left")
-        self.file_picker = ttk.Combobox(header, textvariable=self.current_file, state="readonly", width=40)
-        self.file_picker.pack(side="right")
+        header.columnconfigure(1, weight=1)
+        self.title_label = ttk.Label(header, text="Enterprise XML Analyzer", style="Title.TLabel")
+        self.title_label.grid(row=0, column=0, sticky="w", padx=(0, 10))
+        ttk.Label(header, text="ローカルXMLワークスペース", style="Muted.TLabel").grid(row=1, column=0, sticky="w")
+        self.file_picker = ttk.Combobox(header, textvariable=self.current_file, state="readonly", width=24)
+        self.file_picker.grid(row=0, column=1, rowspan=2, sticky="ew")
         self.file_picker.bind("<<ComboboxSelected>>", lambda e: self.select_file())
+        self.navigation = ttk.Frame(header)
+        self.navigation.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(5, 0))
+        ttk.Label(self.navigation, text="画面").pack(side="left", padx=(0, 6))
+        self.page_choice = ttk.Combobox(self.navigation, state="readonly", width=24)
+        self.page_choice.pack(side="left", fill="x", expand=True)
+        self.page_choice.bind("<<ComboboxSelected>>", lambda e: self.tabs.select(self.pages[self.page_choice.get()]))
         self.summary = ttk.Label(root, text="0 ファイル ｜ XMLはこのPC内で処理します。", padding=(18, 0))
         self.summary.pack(anchor="w")
         self.tabs = ttk.Notebook(root)
         self.tabs.pack(fill="both", expand=True, padx=14, pady=12)
-        self.pages = {}
+        self.pages, self.contents = {}, {}
         for name in ("XML読込", "構造ビュー", "グラフ", "XML比較", "Excel出力", "統計", "設定"):
-            page = ttk.Frame(self.tabs, padding=12)
+            page = ScrollablePage(self.tabs)
             self.tabs.add(page, text=name)
             self.pages[name] = page
+            self.contents[name] = page.body
+        self.page_choice.configure(values=tuple(self.pages))
+        self.page_choice.set("XML読込")
+        self.tabs.bind("<<NotebookTabChanged>>", self.tab_changed)
         self._load_page()
         self._tree_page()
-        self.graph = Graph(self.pages["グラフ"], self.store, self.jump_to_node, self.report)
+        self.graph = Graph(self.contents["グラフ"], self.store, self.jump_to_node, self.report)
         self.graph.pack(fill="both", expand=True)
         self._compare_page()
         self._export_page()
-        self.statistics = tk.Text(self.pages["統計"], wrap="none", font=("Yu Gothic UI", 11))
+        self.statistics = tk.Text(self.contents["統計"], height=12, wrap="word", font=("Yu Gothic UI", 11))
         self.statistics.pack(fill="both", expand=True)
         self._settings_page()
         footer = ttk.Frame(root, padding=(16, 6))
         footer.pack(fill="x")
-        ttk.Label(footer, textvariable=self.status, wraplength=760).pack(side="left", fill="x", expand=True)
+        self.status_label = ttk.Label(footer, textvariable=self.status, wraplength=760)
+        self.status_label.pack(side="left", fill="x", expand=True)
         self.cancel_button = ttk.Button(footer, text="中断", command=self.cancel, state="disabled")
         self.cancel_button.pack(side="right")
         self.progress = ttk.Progressbar(root, mode="determinate")
@@ -115,8 +132,44 @@ class Application:
         footer.pack_configure(side="bottom")
         self.progress.pack_configure(side="bottom")
         self.tabs.pack(fill="both", expand=True, padx=14, pady=12)
+        self.resize_pending = None
+        self.root.bind("<Configure>", self.schedule_resize, add="+")
+        self.root.after_idle(self.resize_layout)
         self.uninstall_drop = install_file_drop(root, self.import_files)
         self.poll_id = root.after(50, self.poll)
+
+    def tab_changed(self, event=None):
+        selected = self.tabs.select()
+        for name, page in self.pages.items():
+            if str(page) == selected:
+                self.page_choice.set(name)
+                break
+
+    def schedule_resize(self, event):
+        if event.widget is self.root and self.resize_pending is None:
+            self.resize_pending = self.root.after_idle(self.resize_layout)
+
+    def resize_layout(self):
+        self.resize_pending = None
+        width = self.root.winfo_width()
+        compact = width < 900
+        if compact:
+            self.navigation.grid()
+        else:
+            self.navigation.grid_remove()
+        self.tabs.configure(style="Compact.TNotebook" if compact else "TNotebook")
+        self.status_label.configure(wraplength=max(200, width - 140))
+        self.title_label.configure(font=("Yu Gothic UI", 15 if compact else 19, "bold"))
+        def wrap(widget):
+            for child in widget.winfo_children():
+                if isinstance(child, ttk.Label) and int(child.cget("wraplength") or 0) > 0:
+                    child.configure(wraplength=max(200, width - 80))
+                if isinstance(child, FlowFrame):
+                    child.schedule()
+                wrap(child)
+        for page in self.pages.values():
+            wrap(page)
+            page.schedule()
 
     def _style(self):
         style = ttk.Style(self.root)
@@ -124,6 +177,7 @@ class Application:
             style.theme_use("vista")
         elif "clam" in style.theme_names():
             style.theme_use("clam")
+        style.layout("Compact.TNotebook.Tab", [])
         style.configure(".", font=("Yu Gothic UI", 10))
         style.configure("Treeview", rowheight=28)
         style.configure("Treeview.Heading", font=("Yu Gothic UI", 10, "bold"))
@@ -140,6 +194,8 @@ class Application:
         if self.task:
             self.status.set("処理中です。完了または中断後に操作してください。")
             return False
+        # Reclaim closed Tk widget cycles on the UI thread before starting a worker.
+        gc.collect()
         self.task = Task(progress=lambda text, count, total: self.messages.put(("progress", (text, count, total))))
         self.lock_controls(True)
         task = self.task
@@ -239,13 +295,14 @@ class Application:
             self.saved_states = []
 
     def _load_page(self):
-        page = self.pages["XML読込"]
+        page = self.contents["XML読込"]
         ttk.Label(page, text="XMLの構造を、見えるかたちに。", font=("Yu Gothic UI", 18, "bold")).pack(anchor="w", pady=10)
         ttk.Label(page, text="UTF-8 / UTF-16対応。複数ファイル・UNC共有のファイルも選択できます。Windowsではここへドロップできます。", wraplength=1000).pack(anchor="w", pady=5)
-        bar = ttk.Frame(page)
+        bar = FlowFrame(page)
         bar.pack(fill="x", pady=12)
         ttk.Button(bar, text="XMLファイルを選択", command=self.pick_files).pack(side="left", padx=3)
         ttk.Button(bar, text="選択ファイルを削除", command=self.delete_selected).pack(side="left", padx=3)
+        ttk.Button(bar, text="学習データをExcel保存", command=self.export_ml).pack(side="left", padx=(18, 3))
         self.file_table = make_table(page, ["ファイル", "サイズ", "要素数", "深さ", "文字コード", "解析秒"], {"ファイル": 400})
         self.file_table.bind("<<TreeviewSelect>>", self.select_from_table)
 
@@ -276,7 +333,10 @@ class Application:
 
     def refresh_files(self):
         selected = self.file_id()
+        previous_ids = [file["id"] for file in self.files]
         self.files = self.store.files()
+        if previous_ids != [file["id"] for file in self.files]:
+            self.reset_ml_preview()
         self.file_labels = {f'{f["name"]}  [{f["id"][:6]}]': f["id"] for f in self.files}
         labels = tuple(self.file_labels)
         for widget in (self.file_picker, self.compare_a, self.compare_b):
@@ -348,8 +408,8 @@ class Application:
         self.preview_text.delete("1.0", "end")
 
     def _tree_page(self):
-        page = self.pages["構造ビュー"]
-        bar = ttk.Frame(page)
+        page = self.contents["構造ビュー"]
+        bar = FlowFrame(page)
         bar.pack(fill="x")
         self.search_text = tk.StringVar()
         ttk.Entry(bar, textvariable=self.search_text, width=30).pack(side="left", padx=3)
@@ -369,6 +429,9 @@ class Application:
         scroll = ttk.Scrollbar(left, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=scroll.set)
         scroll.pack(side="right", fill="y")
+        horizontal = ttk.Scrollbar(left, orient="horizontal", command=self.tree.xview)
+        horizontal.pack(side="bottom", fill="x")
+        self.tree.configure(xscrollcommand=horizontal.set)
         self.tree.pack(fill="both", expand=True)
         self.tree.bind("<<TreeviewOpen>>", lambda e: self.expand_tree(self.tree.focus()))
         self.tree.bind("<<TreeviewSelect>>", self.tree_selected)
@@ -376,7 +439,7 @@ class Application:
         ttk.Button(right, text="この要素を出力の1行にする", command=self.use_record).pack(fill="x", pady=3)
         ttk.Button(right, text="選択サブツリーをグラフ表示", command=self.focus_graph).pack(fill="x", pady=3)
         ttk.Button(right, text="XML断片を表示", command=self.show_fragment).pack(fill="x", pady=3)
-        self.detail = tk.Text(right, wrap="word", font=("Yu Gothic UI", 10))
+        self.detail = tk.Text(right, height=10, width=30, wrap="word", font=("Yu Gothic UI", 10))
         self.detail.pack(fill="both", expand=True, pady=5)
         self.search_results = make_table(page, ["検索結果", "パス"], {"パス": 750}, height=3)
         self.search_results.bind("<<TreeviewSelect>>", self.search_selected)
@@ -492,8 +555,8 @@ class Application:
                 self.jump_to_node(n)
 
     def _compare_page(self):
-        page = self.pages["XML比較"]
-        bar = ttk.Frame(page)
+        page = self.contents["XML比較"]
+        bar = FlowFrame(page)
         bar.pack(fill="x")
         ttk.Label(bar, text="XML A").pack(side="left")
         self.compare_a = ttk.Combobox(bar, state="readonly", width=30)
@@ -507,7 +570,7 @@ class Application:
         ttk.Label(bar, text="キー属性").pack(side="left")
         self.compare_key = tk.StringVar(value="id")
         ttk.Entry(bar, textvariable=self.compare_key, width=14).pack(side="left", padx=4)
-        options = ttk.Frame(page)
+        options = FlowFrame(page)
         options.pack(fill="x", pady=8)
         self.compare_flags = {}
         for key, label, default in (("trim", "空白を除いて比較", True), ("comments", "コメントを含む", False),
@@ -516,7 +579,7 @@ class Application:
             variable = tk.BooleanVar(value=default)
             self.compare_flags[key] = variable
             ttk.Checkbutton(options, text=label, variable=variable).pack(side="left", padx=4)
-        actions = ttk.Frame(page)
+        actions = FlowFrame(page)
         actions.pack(fill="x")
         ttk.Button(actions, text="比較を開始", command=self.start_compare).pack(side="left", padx=3)
         self.diff_filter = ttk.Combobox(actions, values=("すべて", *DIFF_LABELS.values()), state="readonly", width=12)
@@ -531,11 +594,11 @@ class Application:
         ttk.Button(actions, text="左右グラフ", command=self.compare_graphs).pack(side="left", padx=3)
         self.diff_summary = ttk.Label(page, text="異なる2つのXMLを選んで比較してください。")
         self.diff_summary.pack(anchor="w", pady=8)
-        self.differences = make_table(page, ["差分", "XML A", "XML B", "根拠", "省略範囲件数"], {"XML A": 350, "XML B": 350}, height=12)
+        self.differences = make_table(page, ["差分", "XML A", "XML B", "根拠", "省略範囲件数"], {"XML A": 350, "XML B": 350}, height=8)
         for kind, color in DIFF_COLORS.items():
             self.differences.tag_configure(kind, foreground=color)
         self.differences.bind("<<TreeviewSelect>>", self.show_diff_detail)
-        self.diff_detail = tk.Text(page, height=7, wrap="word", font=("Yu Gothic UI", 10))
+        self.diff_detail = tk.Text(page, height=5, wrap="word", font=("Yu Gothic UI", 10))
         self.diff_detail.pack(side="bottom", fill="x", pady=5)
         self.differences.master.pack_forget()
         self.differences.master.pack(fill="both", expand=True, pady=5)
@@ -625,16 +688,47 @@ class Application:
         self.run("差分Excel保存", lambda task: write_xlsx(target, difference_rows(self.store, comparison, kind, task), template, task))
 
     def _export_page(self):
-        container = self.pages["Excel出力"]
+        container = self.contents["Excel出力"]
+        simple = ttk.LabelFrame(container, text="簡単出力モード（回帰・分類向け）", padding=8)
+        simple.pack(fill="x", pady=(0, 10))
+        ttk.Label(simple, text="読み込み済みの全XMLから、1件＝1行・1項目＝1列の表を作成します。数値・真偽値・文字列を全件で判定し、欠損は空欄にします。",
+                  wraplength=900).pack(anchor="w")
+        self.ml_auto = "自動（繰り返し要素を候補から選択）"
+        self.ml_file_unit = "XMLファイル単位（1ファイル＝1行）"
+        self.ml_record_path = tk.StringVar(value=self.ml_auto)
+        ttk.Label(simple, text="1行の単位（候補を選択、または要素の絶対パスを入力）").pack(anchor="w", pady=(6, 0))
+        self.ml_record_choice = ttk.Combobox(simple, textvariable=self.ml_record_path,
+                                           values=(self.ml_auto, self.ml_file_unit))
+        self.ml_record_choice.pack(fill="x")
+        ttk.Label(simple, text="目的変数（任意・予測したい項目。候補はプレビュー後に表示）").pack(anchor="w", pady=(5, 0))
+        self.ml_target = ttk.Combobox(simple, values=("未指定",))
+        self.ml_target.set("未指定")
+        self.ml_target.pack(fill="x")
+        actions = FlowFrame(simple)
+        actions.pack(fill="x", pady=5)
+        ttk.Button(actions, text="構造を確認・プレビュー", command=self.preview_ml).pack(side="left")
+        self.simple_export_button = ttk.Button(actions, text="学習データをExcel保存", command=self.export_ml)
+        self.simple_export_button.pack(side="left")
+        self.all_elements_button = ttk.Button(actions, text="全要素一覧をExcel保存", command=self.export_all_elements)
+        self.all_elements_button.pack(side="left")
+        self.ml_summary = ttk.Label(simple, text="自動候補は全XMLで共通する最も浅い繰り返し要素です。保存前に1行の意味を確認してください。", wraplength=900)
+        self.ml_summary.pack(anchor="w")
+        self.ml_preview = make_table(simple, ["プレビュー"], height=4)
+        ttk.Label(simple, text="学習データ／出典／項目定義／出力情報の4種類のシートを保存。ID候補・定数列は項目定義で確認できます。", wraplength=900).pack(anchor="w")
+        ttk.Label(container, text="詳細出力：対象XML・列・条件を指定する場合は、以下を設定します。",
+                  style="Muted.TLabel").pack(anchor="w", pady=(0, 4))
+        horizontal = ttk.Scrollbar(container, orient="horizontal")
+        horizontal.pack(side="bottom", fill="x")
         scroll = ttk.Scrollbar(container, orient="vertical")
         scroll.pack(side="right", fill="y")
-        self.export_scroll = tk.Canvas(container, highlightthickness=0, yscrollcommand=scroll.set)
+        self.export_scroll = tk.Canvas(container, highlightthickness=0, yscrollcommand=scroll.set, xscrollcommand=horizontal.set)
         self.export_scroll.pack(fill="both", expand=True)
         scroll.configure(command=self.export_scroll.yview)
+        horizontal.configure(command=self.export_scroll.xview)
         page = ttk.Frame(self.export_scroll)
         window = self.export_scroll.create_window((0, 0), window=page, anchor="nw")
-        self.export_scroll.bind("<Configure>", lambda e: self.export_scroll.itemconfigure(window, width=e.width))
-        page.bind("<Configure>", lambda e: self.export_scroll.configure(scrollregion=self.export_scroll.bbox("all")))
+        self.export_scroll.bind("<Configure>", lambda e: self.export_scroll.itemconfigure(window, width=max(e.width, page.winfo_reqwidth())))
+        page.bind("<Configure>", lambda e: (self.export_scroll.itemconfigure(window, width=max(self.export_scroll.winfo_width(), page.winfo_reqwidth())), self.export_scroll.configure(scrollregion=self.export_scroll.bbox("all"))))
         upper = ttk.Frame(page)
         upper.pack(fill="x")
         selection = ttk.LabelFrame(upper, text="対象XML（複数選択可）")
@@ -657,7 +751,7 @@ class Application:
         settings.columnconfigure(1, weight=1)
         self.column_table = make_table(page, ["出力", "列名", "相対パス", "型", "繰り返し", "欠損"], {"相対パス": 330}, height=6)
         self.column_table.bind("<<TreeviewSelect>>", self.edit_column)
-        editor = ttk.Frame(page)
+        editor = FlowFrame(page)
         editor.pack(fill="x", pady=4)
         self.column_fields = {}
         for name, key, width in (("列名", "name", 18), ("相対パス", "path", 28)):
@@ -671,13 +765,15 @@ class Application:
             field.pack(side="left", padx=3)
             self.column_fields[key] = field
         ttk.Button(editor, text="列へ反映", command=self.apply_column).pack(side="left", padx=3)
-        bar = ttk.Frame(page)
+        bar = FlowFrame(page)
         bar.pack(fill="x", pady=3)
         for text, action in (("出力ON/OFF", self.toggle_column), ("上へ", lambda: self.move_column(-1)),
                              ("下へ", lambda: self.move_column(1)), ("列を追加", self.add_column), ("列を削除", self.remove_column)):
             ttk.Button(bar, text=text, command=action).pack(side="left", padx=3)
         ttk.Label(bar, text="文字列型を標準にし、先頭ゼロ・大きなIDを保持します。", style="Muted.TLabel").pack(side="left", padx=10)
-        filters = ttk.LabelFrame(page, text="抽出条件（全行共通）")
+        filters_box = ttk.LabelFrame(page, text="抽出条件（全行共通）")
+        filters_box.pack(fill="x", pady=5)
+        filters = FlowFrame(filters_box)
         filters.pack(fill="x", pady=5)
         self.filter_path, self.filter_value, self.filter_max = tk.StringVar(), tk.StringVar(), tk.StringVar()
         ttk.Entry(filters, textvariable=self.filter_path, width=23).pack(side="left", padx=4)
@@ -694,7 +790,7 @@ class Application:
         ttk.Button(filters, text="条件をクリア", command=self.clear_filters).pack(side="left", padx=3)
         self.filter_notice = ttk.Label(page, text="条件なし", wraplength=1150)
         self.filter_notice.pack(anchor="w")
-        formats = ttk.Frame(page)
+        formats = FlowFrame(page)
         formats.pack(fill="x", pady=4)
         self.sheet_name = tk.StringVar(value=self.template.sheet_name)
         self.sheet_rows = tk.StringVar(value=str(self.template.sheet_rows))
@@ -708,7 +804,7 @@ class Application:
             var = tk.BooleanVar(value=True)
             self.export_flags[key] = var
             ttk.Checkbutton(formats, text=text, variable=var).pack(side="left", padx=3)
-        actions = ttk.Frame(page)
+        actions = FlowFrame(page)
         actions.pack(fill="x", pady=4)
         for text, action in (("プレビュー100行", self.start_preview), ("XLSX保存", lambda: self.export_output("xlsx")),
                              ("CSV保存", lambda: self.export_output("csv")), ("設定JSON保存", self.save_template), ("設定JSON読込", self.load_template)):
@@ -850,6 +946,82 @@ class Application:
         elif all(all(v is None or v == "" for v in row.cells[int(self.template.source_file):]) for row in rows):
             self.preview_text.insert("end", "\n警告: プレビューで抽出項目の値が見つかりません。設定したパスを確認してください。")
 
+    def ml_path(self):
+        value = self.ml_record_path.get().strip()
+        return None if value in ("", self.ml_auto) else "" if value == self.ml_file_unit else value
+
+    def reset_ml_preview(self):
+        self.ml_record_path.set(self.ml_auto)
+        self.ml_record_choice.configure(values=(self.ml_auto, self.ml_file_unit))
+        self.ml_target.set("未指定")
+        self.ml_target.configure(values=("未指定",))
+        clear_tree(self.ml_preview)
+        self.ml_summary.configure(text="XMLを読み込んで、構造を確認・プレビューしてください。")
+
+    def preview_ml(self):
+        path = self.ml_path()
+        self.run("学習データ確認", lambda task: preview_export(self.store, path, task), self.show_ml_preview)
+
+    def show_ml_preview(self, result):
+        plan, rows = result
+        self.ml_record_choice.configure(values=(self.ml_auto, self.ml_file_unit, *plan.candidates))
+        self.ml_record_path.set(plan.record_path or self.ml_file_unit)
+        self.ml_target.configure(values=("未指定", *plan.headers))
+        if self.ml_target.get() not in ("未指定", *plan.headers):
+            self.ml_target.set("未指定")
+        clear_tree(self.ml_preview)
+        # Keep the native preview responsive even when a record has hundreds of features.
+        columns = tuple(f"c{i}" for i in range(min(30, len(plan.headers))))
+        self.ml_preview.configure(columns=columns)
+        for column, name in zip(columns, plan.headers):
+            self.ml_preview.heading(column, text=name)
+            self.ml_preview.column(column, width=150, minwidth=60, stretch=False)
+        for row in rows:
+            self.ml_preview.insert("", "end", values=[display(value)[:80] for value in row.cells[:30]])
+        self.ml_summary.configure(text=f"{len(plan.files):,}ファイル・{plan.rows:,}件・{len(plan.features):,}項目。プレビューは先頭20件・30項目・各80文字まで。保存時は全件・全項目を出力します。")
+
+    def export_ml(self):
+        if self.task:
+            return
+        if not self.store.files():
+            self.report(AppError("FILES_EMPTY: 先にXMLファイルを読み込んでください。"))
+            return
+        path = self.ml_path()
+        target_column = self.ml_target.get().strip()
+        if target_column == "未指定":
+            target_column = ""
+        target = filedialog.asksaveasfilename(title="簡単出力：学習データをExcel保存", defaultextension=".xlsx",
+                                            filetypes=[("Excelブック", "*.xlsx")], initialfile="xml-learning-data.xlsx")
+        if not target:
+            return
+        if Path(target).suffix.lower() != ".xlsx":
+            target += ".xlsx"
+        def done(result):
+            self.ml_record_path.set(result["record_path"] or self.ml_file_unit)
+            self.status.set(f'学習データ保存 · 完了（{result["records"]:,}件・{result["features"]:,}項目）')
+        self.run("学習データ保存", lambda task: save_export(self.store, target, path, target_column, task), done)
+
+    def export_all_elements(self):
+        if self.task:
+            return
+        files = self.store.files()
+        if not files:
+            self.report(AppError("FILES_EMPTY: 先にXMLファイルを読み込んでください。"))
+            return
+        target = filedialog.asksaveasfilename(title="全要素一覧：全XMLの全要素をExcel保存",
+                                            defaultextension=".xlsx", filetypes=[("Excelブック", "*.xlsx")],
+                                            initialfile="xml-all-elements.xlsx")
+        if not target:
+            return
+        if Path(target).suffix.lower() != ".xlsx":
+            target += ".xlsx"
+        elements = sum(file["info"]["elements"] for file in files)
+
+        def done(result):
+            self.status.set(f'全要素一覧 · 完了（{len(files):,}ファイル・{elements:,}要素・{result["rows"]:,}行）')
+
+        self.run("全要素一覧", lambda task: write_xlsx(target, all_element_rows(self.store, task), simple_template(), task), done)
+
     def export_output(self, format):
         if self.task:
             return
@@ -936,7 +1108,7 @@ class Application:
             self.statistics.insert("end", "\n比較結果\n" + "\n".join(f'{DIFF_LABELS[k]}: {v:,}' for k, v in counts.items()) + f'\n差分率 = (追加+削除+変更+移動+曖昧) / 全分類の合計 = {changed / total * 100 if total else 0:.2f}%\nサブツリー省略範囲の件数を含み、構造比較では要素数、完全・値比較では文書ノード数を使用します。\n')
 
     def _settings_page(self):
-        page = self.pages["設定"]
+        page = self.contents["設定"]
         ttk.Label(page, text="保存とプライバシー", font=("Yu Gothic UI", 16, "bold")).pack(anchor="w", pady=10)
         ttk.Label(page, text="解析結果は一時フォルダ内のSQLiteへ保存します。通常終了時に削除します。\n作業を続けたい場合だけ、作業ファイルを明示的に保存してください。作業ファイルにはXMLの解析値が含まれます。\n異常終了時に一時フォルダが残る場合があります。共有PCではOSの利用者アカウントを分けてください。", wraplength=1000, justify="left").pack(anchor="w", pady=10)
         for text, command in (("作業ファイルを保存", self.save_workspace), ("作業ファイルを開く", self.open_workspace),
@@ -968,6 +1140,7 @@ class Application:
                     if isinstance(child, tk.Toplevel):
                         child.destroy()
                 self.apply_template(Template())
+                self.reset_ml_preview()
                 for variable in (self.search_text, self.filter_path, self.filter_value, self.filter_max,
                                  self.column_fields["path"], self.column_fields["name"]):
                     variable.set("")
@@ -1010,6 +1183,8 @@ class Application:
             self.root.after(50, self.finish_close)
             return
         self.root.after_cancel(self.poll_id)
+        if self.resize_pending is not None:
+            self.root.after_cancel(self.resize_pending)
         self.uninstall_drop()
         self.root.destroy()
         self.temporary.cleanup()

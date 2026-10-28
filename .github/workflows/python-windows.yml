@@ -1,8 +1,8 @@
 name: Python 3.14.6 Windows standalone
 on:
   push:
-    branches: [main, 'feat/python-standalone-3146']
-    paths: ['xml_analyzer/**', 'tests_python/**', '*.py', '*.cmd', 'scripts/*python.py', 'pyproject.toml', '.python-version', 'requirements-build-windows.txt', '.github/workflows/python-windows.yml']
+    branches: [main, 'feat/python-standalone-3146', 'feat/python-simple-export']
+    paths: ['xml_analyzer/**', 'tests_python/**', '*.py', '*.cmd', 'scripts/*python.py', 'docs/python-user-guide/**', 'docs/python-*.md', 'docs/validation/python-*.json', 'pyproject.toml', '.python-version', 'requirements-build-windows.txt', '.github/workflows/python-windows.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -34,13 +34,13 @@ jobs:
         run: |
           import os, subprocess
           paths = subprocess.check_output(['git', 'diff-tree', '--root', '--no-commit-id', '--name-only', '-r', 'HEAD'], text=True).splitlines()
-          engine = {'xml_analyzer/parser.py', 'xml_analyzer/storage.py', 'xml_analyzer/comparison.py', 'xml_analyzer/extraction.py', 'xml_analyzer/writers.py', 'xml_analyzer/models.py', 'scripts/performance_python.py'}
+          engine = {'xml_analyzer/parser.py', 'xml_analyzer/storage.py', 'xml_analyzer/comparison.py', 'xml_analyzer/extraction.py', 'xml_analyzer/simple_export.py', 'xml_analyzer/ml_export.py', 'xml_analyzer/writers.py', 'xml_analyzer/models.py', 'scripts/performance_python.py'}
           required = os.environ['GITHUB_EVENT_NAME'] == 'workflow_dispatch' or bool(engine.intersection(paths))
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as out:
               out.write('performance=' + str(required).lower() + '\n')
       - name: Synthetic large XML and streaming XLSX/CSV performance
         if: steps.scope.outputs.performance == 'true'
-        run: python scripts/performance_python.py --cases 1,10,100,500,million --output artifacts/python-windows-performance.json
+        run: python scripts/performance_python.py --cases 1,10,100,500,million,ml --output artifacts/python-windows-performance.json
       - name: Upload Windows package and verification
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
