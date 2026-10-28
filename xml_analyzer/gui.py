@@ -20,10 +20,13 @@ from .models import (AppError, Cancelled, Column, DIFF_COLORS, DIFF_LABELS, DIFF
 from .parser import parse_file
 from .simple_export import all_element_rows, simple_template
 from .storage import Store
-from .table_export import LONG, WIDE, preview_table, save_table
+from .table_export import LONG, WIDE, header_ranges, preview_table, save_table
 from .visualization import Graph, xml_fragment
 from .windows import install_file_drop
 from .writers import atomic_target, write_csv, write_xlsx
+
+MAX_SIMPLE_SETTINGS_BYTES = 1048576
+ID_PREVIEW_CHARS = 6
 
 
 def display(value):
@@ -280,7 +283,7 @@ class Application:
                     if isinstance(child, (ttk.Button, ttk.Entry, ttk.Combobox, ttk.Checkbutton)) and child is not self.cancel_button:
                         self.saved_states.append((child, child.state()))
                         child.state(["disabled"])
-                    elif isinstance(child, tk.Listbox):
+                    elif isinstance(child, tk.Listbox) or child is getattr(self, "header_paths", None):
                         self.saved_states.append((child, str(child.cget("state"))))
                         child.configure(state="disabled")
                     visit(child)
@@ -289,7 +292,7 @@ class Application:
             for widget, state in getattr(self, "saved_states", []):
                 if not widget.winfo_exists():
                     continue
-                if isinstance(widget, tk.Listbox):
+                if isinstance(widget, (tk.Listbox, tk.Text)):
                     widget.configure(state=state)
                 else:
                     widget.state(["!disabled", "!readonly", *state])
@@ -705,11 +708,30 @@ class Application:
         ttk.Button(actions, text="全要素プレビュー", command=self.preview_all_table).pack(side="left", padx=3)
         self.simple_export_button = ttk.Button(actions, text="全要素をExcel保存", command=self.export_table)
         self.simple_export_button.pack(side="left", padx=3)
-        ttk.Label(whole, text="横持ち：1XML＝1行、ノード/項目名＝列。縦持ち：ノード・項目名・値を行で表示。値は文字列として保持します。",
+        ttk.Label(whole, text="横持ち：文書ルート直下のデータノード＝1行。縦持ち：ノード・項目名・値を行で表示。値は文字列として保持します。",
                   wraplength=900).pack(anchor="w")
+        ttk.Label(whole, text="ヘッダー範囲（任意・要素パスを1行ずつ指定。指定要素と配下全体を分離）").pack(anchor="w", pady=(5, 0))
+        self.header_paths = tk.Text(whole, height=2, width=30, wrap="none")
+        self.header_paths.pack(fill="x")
+        header_actions = FlowFrame(whole)
+        header_actions.pack(fill="x", pady=3)
+        for label, command in (("構造ビューの選択要素を追加", self.add_header_range), ("範囲をクリア", self.clear_header_ranges),
+                               ("簡単出力設定を保存", self.save_table_settings), ("簡単出力設定を読込", self.load_table_settings)):
+            ttk.Button(header_actions, text=label, command=command).pack(side="left", padx=3)
+        ttk.Label(whole, text="IDは画面では短縮表示し、Excelには完全なIDを保存。「紐づけ」シートで対応づけます。ルート自身の値・属性は「共通データ」に保持します。",
+                  wraplength=900).pack(anchor="w")
+        preview_actions = FlowFrame(whole)
+        preview_actions.pack(fill="x", pady=3)
+        ttk.Label(preview_actions, text="表示する内容").pack(side="left", padx=3)
+        self.table_view = ttk.Combobox(preview_actions, state="readonly", values=("中身のデータ", "ヘッダー情報", "紐づけ", "共通データ"), width=16)
+        self.table_view.set("中身のデータ")
+        self.table_view.pack(side="left", padx=3)
+        self.table_view.bind("<<ComboboxSelected>>", lambda _: self.show_cached_table_preview())
+        self.table_preview_result = None
         self.table_summary = ttk.Label(whole, text="XMLを読み込んで、全要素プレビューを実行してください。", wraplength=900)
         self.table_summary.pack(anchor="w")
         self.table_preview = make_table(whole, ["プレビュー"], height=4)
+        self.header_paths.bind("<<Modified>>", self.header_ranges_changed)
         simple = ttk.LabelFrame(container, text="機械学習向け出力（1行の単位を指定・回帰／分類向け）", padding=8)
         simple.pack(fill="x", pady=(0, 10))
         ttk.Label(simple, text="読み込み済みの全XMLから、1件＝1行・1項目＝1列の表を作成します。数値・真偽値・文字列を全件で判定し、欠損は空欄にします。",
@@ -968,29 +990,102 @@ class Application:
             self.preview_text.insert("end", "\n警告: プレビューで抽出項目の値が見つかりません。設定したパスを確認してください。")
 
     def reset_table_preview(self):
+        self.table_preview_result = None
         clear_tree(self.table_preview)
         self.table_summary.configure(text="形式を選び、全要素プレビューを実行してください。")
 
+    def header_ranges_changed(self, _=None):
+        if self.header_paths.edit_modified():
+            self.header_paths.edit_modified(False)
+            self.reset_table_preview()
+
+    def clear_header_ranges(self):
+        self.header_paths.delete("1.0", "end")
+        self.reset_table_preview()
+
+    def add_header_range(self):
+        if not self.selected or self.selected["kind"] != "element":
+            self.report(AppError("HEADER_SELECT: 構造ビューでヘッダーにする要素を選択してください。"))
+            return
+        paths = [path for path in self.header_paths.get("1.0", "end").splitlines() if path.strip()]
+        if self.selected["path"] not in paths:
+            self.header_paths.insert("end", ("\n" if paths else "") + self.selected["path"])
+        self.reset_table_preview()
+
+    def save_table_settings(self):
+        try:
+            paths = header_ranges(self.header_paths.get("1.0", "end"))
+            content = json.dumps({"type": "xml-simple-export", "version": 1,
+                                  "orientation": self.table_orientation.get(), "header_paths": paths}, ensure_ascii=False, indent=2)
+            if len(content.encode("utf-8")) > MAX_SIMPLE_SETTINGS_BYTES:
+                raise AppError("TABLE_SETTINGS_LIMIT: 設定JSONの上限1MiBを超えました。ヘッダー範囲を親要素にまとめてください。")
+            target = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("設定JSON", "*.json")], initialfile="xml-simple-settings.json")
+            if target:
+                with atomic_target(target) as temporary:
+                    temporary.write_text(content, encoding="utf-8")
+                self.status.set("簡単出力設定を保存しました。XMLの値は含まれません。")
+        except (AppError, OSError) as error:
+            self.report(error)
+
+    def load_table_settings(self):
+        target = filedialog.askopenfilename(filetypes=[("設定JSON", "*.json")])
+        if not target:
+            return
+        try:
+            if Path(target).stat().st_size > MAX_SIMPLE_SETTINGS_BYTES:
+                raise ValueError()
+            settings = json.loads(Path(target).read_text(encoding="utf-8"))
+            if (not isinstance(settings, dict) or settings.get("type") != "xml-simple-export" or settings.get("version") != 1
+                    or settings.get("orientation") not in (LONG, WIDE) or not isinstance(settings.get("header_paths"), list)
+                    or not all(isinstance(path, str) for path in settings["header_paths"])):
+                raise ValueError()
+            paths = header_ranges(settings["header_paths"])
+            self.header_paths.delete("1.0", "end")
+            self.header_paths.insert("1.0", "\n".join(paths))
+            self.table_orientation.set(settings["orientation"])
+            self.reset_table_preview()
+        except (OSError, ValueError, AppError, RecursionError) as error:
+            self.report(error if isinstance(error, AppError) else AppError("TABLE_SETTINGS: 対応する正常な簡単出力設定JSONを選択してください。"))
+
     def preview_all_table(self):
         orientation = self.table_orientation.get()
-        self.run("全要素確認", lambda task: preview_table(self.store, orientation, task), self.show_table_preview)
+        try:
+            paths = header_ranges(self.header_paths.get("1.0", "end"))
+            self.run("全要素確認", lambda task: preview_table(self.store, orientation, task, paths), self.show_table_preview)
+        except AppError as error:
+            self.report(error)
 
     def show_table_preview(self, result):
         if result["orientation"] != self.table_orientation.get():
             return
+        self.table_preview_result = result
+        self.show_cached_table_preview()
+
+    def show_cached_table_preview(self):
+        result = self.table_preview_result
+        if not result:
+            return
+        view = result["previews"][self.table_view.get()]
         clear_tree(self.table_preview)
-        columns = tuple(f"c{i}" for i in range(len(result["headers"])))
-        visible = tuple(column for column, name in zip(columns, result["headers"])
-                        if result["orientation"] != LONG or name not in ("ファイルID", "要素番号"))
+        columns = tuple(f"c{i}" for i in range(len(view["headers"])))
+        visible = tuple(column for column, name in zip(columns, view["headers"])
+                        if name not in ("ファイルID", "要素番号") and (name != "データID" or self.table_view.get() == "紐づけ"))
         self.table_preview.configure(columns=columns, displaycolumns=visible)
         widths = {"元ファイル": 150, "ファイルID": 100, "ノード": 180, "項目名": 160, "値": 180}
-        for column, name in zip(columns, result["headers"]):
+        for column, name in zip(columns, view["headers"]):
             self.table_preview.heading(column, text=name)
             self.table_preview.column(column, width=widths.get(name, 150), minwidth=60, stretch=False)
-        for row in result["rows"]:
-            self.table_preview.insert("", "end", values=[display(value)[:80].replace("\n", "↵") for value in row])
+        for row in view["rows"]:
+            cells = []
+            for name, value in zip(view["headers"], row):
+                text = display(value)
+                if name in ("データID", "ヘッダーID") and ":" in text:
+                    file, _, suffix = text.partition(":")
+                    text = file[:ID_PREVIEW_CHARS] + "…:" + suffix
+                cells.append(text[:80].replace("\n", "↵"))
+            self.table_preview.insert("", "end", values=cells)
         count = f'・{result["columns"]:,}項目' if result["columns"] is not None else ""
-        self.table_summary.configure(text=f'{result["orientation"]}：{result["files"]:,}ファイル・{result["elements"]:,}要素{count}。プレビューは先頭20行・30列・各80文字まで。保存時はすべて出力します。')
+        self.table_summary.configure(text=f'{result["orientation"]}：{result["files"]:,}ファイル・データ{result["data_records"]:,}件・ヘッダー{result["header_groups"]:,}件{count}。表示は先頭20行・30列・各80文字まで。保存は全件です。')
 
     def export_table(self):
         if self.task:
@@ -999,6 +1094,11 @@ class Application:
             self.report(AppError("FILES_EMPTY: 先にXMLファイルを読み込んでください。"))
             return
         orientation = self.table_orientation.get()
+        try:
+            paths = header_ranges(self.header_paths.get("1.0", "end"))
+        except AppError as error:
+            self.report(error)
+            return
         target = filedialog.asksaveasfilename(title=f"簡単出力：全要素を{orientation}でExcel保存", defaultextension=".xlsx",
                                             filetypes=[("Excelブック", "*.xlsx")],
                                             initialfile="xml-all-wide.xlsx" if orientation == WIDE else "xml-all-long.xlsx")
@@ -1007,8 +1107,8 @@ class Application:
         if Path(target).suffix.lower() != ".xlsx":
             target += ".xlsx"
         def done(result):
-            self.status.set(f'全要素・{result["orientation"]}保存 · 完了（{result["files"]:,}ファイル・{result["elements"]:,}要素・{result["values"]:,}値）')
-        self.run("全要素保存", lambda task: save_table(self.store, target, orientation, task), done)
+            self.status.set(f'全要素・{result["orientation"]}保存 · 完了（データ{result["data_records"]:,}件・ヘッダー{result["header_groups"]:,}件・全{result["values"]:,}値）')
+        self.run("全要素保存", lambda task: save_table(self.store, target, orientation, task, paths), done)
 
     def ml_path(self):
         value = self.ml_record_path.get().strip()
@@ -1206,6 +1306,7 @@ class Application:
                 self.apply_template(Template())
                 self.reset_ml_preview()
                 self.reset_table_preview()
+                self.clear_header_ranges()
                 for variable in (self.search_text, self.filter_path, self.filter_value, self.filter_max,
                                  self.column_fields["path"], self.column_fields["name"]):
                     variable.set("")

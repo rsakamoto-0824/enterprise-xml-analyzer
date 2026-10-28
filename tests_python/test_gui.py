@@ -245,7 +245,7 @@ class GuiTests(unittest.TestCase):
         original = self.app.template.to_json()
         self.app.export_files.selection_clear(0, 'end')
         self.app.ml_record_path.set('/r/n')
-        for orientation, rows in ((WIDE, 2), (LONG, 8)):
+        for orientation, rows in ((WIDE, 3), (LONG, 6)):
             self.app.table_orientation.set(orientation)
             self.app.table_orientation.event_generate('<<ComboboxSelected>>')
             self.assertEqual(self.app.table_preview.get_children(), ())
@@ -262,12 +262,63 @@ class GuiTests(unittest.TestCase):
             self.assertEqual(self.app.template.to_json(), original)
             with zipfile.ZipFile(target.with_suffix('.xlsx')) as archive:
                 text = archive.read('xl/worksheets/sheet1.xml').decode()
-                for value in ('001', '20', '30', ' A ', 'outside', 'different', 'empty'):
+                for value in ('001', '20', '30', ' A ', 'outside', 'empty'):
                     self.assertIn(value, text)
                 self.assertNotIn('<f>', text)
         self.app.clear_workspace()
         self.wait()
         self.assertEqual(self.app.table_preview.get_children(), ())
+
+    def test_header_ranges_preview_links_settings_and_clear(self):
+        file = self.load('<r><h><id>001</id></h><n><header>local</header><v>20</v></n><n><v>30</v></n></r>')
+        header = next(self.app.store.nodes(file, path='/r/h'))
+        self.app.jump_to_node(header)
+        self.app.add_header_range()
+        self.app.header_paths.insert('end', '\n/r/n/header')
+        self.root.update()
+        self.app.preview_all_table()
+        self.assertEqual(self.app.header_paths.cget('state'), 'disabled')
+        self.wait()
+        self.assertEqual(self.app.header_paths.cget('state'), 'normal')
+        self.assertEqual(self.app.last_result['data_records'], 2)
+        self.assertEqual(self.app.last_result['header_groups'], 2)
+        self.assertEqual(len(self.app.table_preview.get_children()), 2)
+        for view, rows in (('ヘッダー情報', 3), ('紐づけ', 3), ('中身のデータ', 2), ('共通データ', 1)):
+            self.app.table_view.set(view)
+            self.app.table_view.event_generate('<<ComboboxSelected>>')
+            self.assertEqual(len(self.app.table_preview.get_children()), rows)
+        settings = self.base / 'simple.json'
+        with patch('xml_analyzer.gui.filedialog.asksaveasfilename', return_value=str(settings)):
+            self.app.save_table_settings()
+        content = json.loads(settings.read_text())
+        self.assertEqual(content['header_paths'], ['/r/h', '/r/n/header'])
+        self.assertNotIn('001', settings.read_text())
+        self.app.clear_header_ranges()
+        with patch('xml_analyzer.gui.filedialog.askopenfilename', return_value=str(settings)):
+            self.app.load_table_settings()
+        self.assertEqual(self.app.header_paths.get('1.0', 'end').strip(), '/r/h\n/r/n/header')
+        settings.write_text('{"type":"wrong"}')
+        original = self.app.header_paths.get('1.0', 'end')
+        with patch('xml_analyzer.gui.filedialog.askopenfilename', return_value=str(settings)):
+            self.app.load_table_settings()
+        self.assertEqual(self.app.header_paths.get('1.0', 'end'), original)
+        self.assertIn('TABLE_SETTINGS', self.app.status.get())
+        for orientation in ('横持ち', '縦持ち'):
+            self.app.table_orientation.set(orientation)
+            target = self.base / (orientation + '.xlsx')
+            with patch('xml_analyzer.gui.filedialog.asksaveasfilename', return_value=str(target)):
+                self.app.export_table()
+            self.wait()
+            self.assertEqual(self.app.last_result['header_groups'], 2)
+            self.assertEqual(self.app.last_result['data_records'], 2)
+            with zipfile.ZipFile(target) as archive:
+                text = archive.read('xl/workbook.xml').decode()
+                self.assertIn('ヘッダー', text)
+                self.assertIn('紐づけ', text)
+        self.app.clear_workspace()
+        self.wait()
+        self.assertEqual(self.app.header_paths.get('1.0', 'end').strip(), '')
+        self.assertIsNone(self.app.table_preview_result)
 
     def test_resize_all_pages_and_wrapped_buttons_keep_state(self):
         from tkinter import ttk

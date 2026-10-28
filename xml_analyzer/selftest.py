@@ -89,7 +89,8 @@ def self_test(screenshot_dir=None):
             with zipfile.ZipFile(learning_workbook) as archive:
                 assert archive.read("xl/workbook.xml").decode().count('<sheet ') == 4
                 assert '<f>' not in archive.read("xl/worksheets/sheet1.xml").decode()
-            for orientation, rows in (("縦持ち", 14), ("横持ち", 2)):
+            app.header_paths.insert("1.0", "/r/n/v")
+            for orientation, rows in (("縦持ち", 8), ("横持ち", 4)):
                 app.table_orientation.set(orientation)
                 app.preview_all_table()
                 deadline = time.monotonic() + 30
@@ -108,7 +109,8 @@ def self_test(screenshot_dir=None):
                 assert app.last_result["elements"] == 10 and app.last_result["values"] == 14
                 assert app.last_result["data_rows"] == rows
                 if orientation == "横持ち":
-                    assert app.last_result["columns"] == 7
+                    assert app.last_result["columns"] == 2
+                assert app.last_result["header_groups"] == 4 and app.last_result["header_values"] == 4
             app.set_file(ids[0])
             root.update()
             assert len(app.graph.points) > 0
@@ -148,7 +150,7 @@ def self_test(screenshot_dir=None):
                     "frozen": bool(getattr(sys, "frozen", False)), "files": 2,
                     "modified": result["counts"]["MODIFIED"], "xlsx_rows": exported["rows"], "all_element_rows": 10,
                     "ml_records": 4, "ml_features": 2, "ml_sheets": 4, "minimum_window": "640x480",
-                    "table_elements": 10, "table_values": 14, "table_wide_rows": 2, "table_wide_columns": 7, "table_long_rows": 14,
+                    "table_elements": 10, "table_values": 14, "table_wide_rows": 4, "table_wide_columns": 2, "table_long_rows": 8, "table_header_groups": 4, "table_header_values": 4,
                     "gui": "Tk application, background import, tree and canvas", "network": "blocked", "screenshots": screenshots}
             app.finish_close()
             app, root = None, None

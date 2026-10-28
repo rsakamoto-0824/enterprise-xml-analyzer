@@ -48,9 +48,10 @@ def generate(path, scale, changed=False):
         file.write(b"<Root>")
         elements, group = 1, 0
         if scale == "table":
+            file.write(b'<Header><Run>TEST</Run></Header>')
             for index in range(20000):
                 file.write(f'<Item id="{index:06d}"><Value>{index}</Value></Item>'.encode())
-            elements += 40000
+            elements += 40002
         elif scale == "ml":
             for index in range(100000):
                 file.write(f'<Item id="{index:06d}"><temperature>{20 + index % 100 / 10}</temperature><class>{index % 3}</class></Item>'.encode())
@@ -153,12 +154,16 @@ def main():
             if scale == "table":
                 for orientation, key in ((WIDE, "table_wide"), (LONG, "table_long")):
                     started = time.monotonic()
-                    saved = save_table(store, base / (key + ".xlsx"), orientation)
+                    saved = save_table(store, base / (key + ".xlsx"), orientation,
+                                       header_paths=['/Root/Header', '/Root/Item/Value'])
                     row[key + "_seconds"] = time.monotonic() - started
-                    assert saved["elements"] == 40001 and saved["values"] == 60001
-                    assert saved["data_rows"] == (1 if orientation == WIDE else 60001)
-                    if orientation == WIDE:
-                        assert saved["columns"] == 60001 and saved["sheets"] == 7
+                    assert saved["elements"] == 40003 and saved["values"] == 60003
+                    assert saved["data_rows"] == (20000 if orientation == WIDE else 40000)
+                    assert saved["data_records"] == 20000 and saved["header_groups"] == 20001
+                    assert saved["header_values"] == 20002 and saved["columns"] == 2
+                    row['table_header_groups'] = saved['header_groups']
+                    row['table_header_values'] = saved['header_values']
+                    row['table_records'] = saved['data_records']
                     row[key + "_rows"] = saved["data_rows"]
                     row[key + "_bytes"] = saved["bytes"]
             started = time.monotonic()
