@@ -222,7 +222,7 @@ class GuiTests(unittest.TestCase):
         self.app.ml_target.set("y")
         target = self.base / "学習データ.xlsx"
         with patch("xml_analyzer.gui.filedialog.asksaveasfilename", return_value=str(target)):
-            self.app.simple_export_button.invoke()
+            self.app.ml_export_button.invoke()
         self.wait()
         self.assertEqual(self.app.last_result["records"], 3)
         self.assertIn("3件・3項目", self.app.status.get())
@@ -236,6 +236,38 @@ class GuiTests(unittest.TestCase):
         self.wait()
         self.assertEqual(self.app.ml_target.get(), "未指定")
         self.assertEqual(self.app.ml_preview.get_children(), ())
+
+    def test_all_table_choice_preserves_outside_values_and_ignores_selection(self):
+        from xml_analyzer.table_export import LONG, WIDE
+        self.load('<r><n id="001"><x>20</x><x>30</x></n><outside> A </outside></r>')
+        self.load('<different><empty/></different>', 'b.xml')
+        self.app.template = Template(record_path="/wrong", columns=[])
+        original = self.app.template.to_json()
+        self.app.export_files.selection_clear(0, 'end')
+        self.app.ml_record_path.set('/r/n')
+        for orientation, rows in ((WIDE, 2), (LONG, 8)):
+            self.app.table_orientation.set(orientation)
+            self.app.table_orientation.event_generate('<<ComboboxSelected>>')
+            self.assertEqual(self.app.table_preview.get_children(), ())
+            self.app.preview_all_table()
+            self.wait()
+            self.assertEqual(len(self.app.table_preview.get_children()), rows)
+            target = self.base / orientation
+            with patch('xml_analyzer.gui.filedialog.asksaveasfilename', return_value=str(target)):
+                self.app.simple_export_button.invoke()
+            self.wait()
+            self.assertEqual(self.app.last_result['elements'], 7)
+            self.assertEqual(self.app.last_result['values'], 8)
+            self.assertEqual(self.app.last_result['data_rows'], rows)
+            self.assertEqual(self.app.template.to_json(), original)
+            with zipfile.ZipFile(target.with_suffix('.xlsx')) as archive:
+                text = archive.read('xl/worksheets/sheet1.xml').decode()
+                for value in ('001', '20', '30', ' A ', 'outside', 'different', 'empty'):
+                    self.assertIn(value, text)
+                self.assertNotIn('<f>', text)
+        self.app.clear_workspace()
+        self.wait()
+        self.assertEqual(self.app.table_preview.get_children(), ())
 
     def test_resize_all_pages_and_wrapped_buttons_keep_state(self):
         from tkinter import ttk

@@ -68,7 +68,24 @@ def main():
                 app.export_ml()
             wait()
             assert app.last_result["records"] == 6 and app.last_result["features"] == 4
-            capture("11-simple-export", "Excel出力")
+            app.tabs.select(app.pages["Excel出力"])
+            root.update()
+            app.pages["Excel出力"].reveal(app.ml_export_button)
+            capture("14-learning-export", "Excel出力")
+            for orientation in ("縦持ち", "横持ち"):
+                app.table_orientation.set(orientation)
+                app.preview_all_table()
+                wait()
+                target = Path(folder) / (orientation + ".xlsx")
+                with patch("xml_analyzer.gui.filedialog.asksaveasfilename", return_value=str(target)):
+                    app.simple_export_button.invoke()
+                wait()
+                assert app.last_result["elements"] == 26 and app.last_result["values"] == 32
+                assert app.last_result["data_rows"] == (32 if orientation == "縦持ち" else 2)
+                if orientation == "横持ち":
+                    assert app.last_result["columns"] == 16
+                app.pages["Excel出力"].canvas.yview_moveto(0)
+                capture("13-long-export" if orientation == "縦持ち" else "11-simple-export", "Excel出力")
             root.geometry("800x600+0+0")
             root.update()
             app.pages["Excel出力"].reveal(app.simple_export_button)
@@ -134,6 +151,7 @@ def main():
             "platform": platform.platform(), "python": platform.python_version(),
             "tk": root.tk.call("info", "patchlevel"), "screenshots": captured,
             "sample_rows": 3, "all_element_rows": 26, "ml_records": 6, "ml_features": 4,
+            "table_elements": 26, "table_values": 32, "table_wide_rows": 2, "table_wide_columns": 16, "table_long_rows": 32,
             "resize": "800x600", "comparison_counts": counts,
             "note": "Unedited real Tk application captures; synthetic samples only. Save chooser substituted, actual XLSX writer executed."
         }, ensure_ascii=False, indent=2), encoding="utf-8")

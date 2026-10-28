@@ -20,6 +20,7 @@ from .models import (AppError, Cancelled, Column, DIFF_COLORS, DIFF_LABELS, DIFF
 from .parser import parse_file
 from .simple_export import all_element_rows, simple_template
 from .storage import Store
+from .table_export import LONG, WIDE, preview_table, save_table
 from .visualization import Graph, xml_fragment
 from .windows import install_file_drop
 from .writers import atomic_target, write_csv, write_xlsx
@@ -302,7 +303,7 @@ class Application:
         bar.pack(fill="x", pady=12)
         ttk.Button(bar, text="XMLファイルを選択", command=self.pick_files).pack(side="left", padx=3)
         ttk.Button(bar, text="選択ファイルを削除", command=self.delete_selected).pack(side="left", padx=3)
-        ttk.Button(bar, text="学習データをExcel保存", command=self.export_ml).pack(side="left", padx=(18, 3))
+        ttk.Button(bar, text="全要素をExcel保存", command=self.export_table).pack(side="left", padx=(18, 3))
         self.file_table = make_table(page, ["ファイル", "サイズ", "要素数", "深さ", "文字コード", "解析秒"], {"ファイル": 400})
         self.file_table.bind("<<TreeviewSelect>>", self.select_from_table)
 
@@ -337,6 +338,7 @@ class Application:
         self.files = self.store.files()
         if previous_ids != [file["id"] for file in self.files]:
             self.reset_ml_preview()
+            self.reset_table_preview()
         self.file_labels = {f'{f["name"]}  [{f["id"][:6]}]': f["id"] for f in self.files}
         labels = tuple(self.file_labels)
         for widget in (self.file_picker, self.compare_a, self.compare_b):
@@ -689,7 +691,26 @@ class Application:
 
     def _export_page(self):
         container = self.contents["Excel出力"]
-        simple = ttk.LabelFrame(container, text="簡単出力モード（回帰・分類向け）", padding=8)
+        whole = ttk.LabelFrame(container, text="簡単出力モード（すべての要素・属性）", padding=8)
+        whole.pack(fill="x", pady=(0, 10))
+        ttk.Label(whole, text="読み込み済みの全XML・全階層を出力します。親・空要素・繰り返し値も含み、以下の機械学習設定や抽出条件では絞り込みません。",
+                  wraplength=900).pack(anchor="w")
+        actions = FlowFrame(whole)
+        actions.pack(fill="x", pady=5)
+        ttk.Label(actions, text="表の形式").pack(side="left", padx=3)
+        self.table_orientation = ttk.Combobox(actions, state="readonly", values=(WIDE, LONG), width=9)
+        self.table_orientation.set(WIDE)
+        self.table_orientation.pack(side="left", padx=3)
+        self.table_orientation.bind("<<ComboboxSelected>>", lambda _: self.reset_table_preview())
+        ttk.Button(actions, text="全要素プレビュー", command=self.preview_all_table).pack(side="left", padx=3)
+        self.simple_export_button = ttk.Button(actions, text="全要素をExcel保存", command=self.export_table)
+        self.simple_export_button.pack(side="left", padx=3)
+        ttk.Label(whole, text="横持ち：1XML＝1行、ノード/項目名＝列。縦持ち：ノード・項目名・値を行で表示。値は文字列として保持します。",
+                  wraplength=900).pack(anchor="w")
+        self.table_summary = ttk.Label(whole, text="XMLを読み込んで、全要素プレビューを実行してください。", wraplength=900)
+        self.table_summary.pack(anchor="w")
+        self.table_preview = make_table(whole, ["プレビュー"], height=4)
+        simple = ttk.LabelFrame(container, text="機械学習向け出力（1行の単位を指定・回帰／分類向け）", padding=8)
         simple.pack(fill="x", pady=(0, 10))
         ttk.Label(simple, text="読み込み済みの全XMLから、1件＝1行・1項目＝1列の表を作成します。数値・真偽値・文字列を全件で判定し、欠損は空欄にします。",
                   wraplength=900).pack(anchor="w")
@@ -707,14 +728,14 @@ class Application:
         actions = FlowFrame(simple)
         actions.pack(fill="x", pady=5)
         ttk.Button(actions, text="構造を確認・プレビュー", command=self.preview_ml).pack(side="left")
-        self.simple_export_button = ttk.Button(actions, text="学習データをExcel保存", command=self.export_ml)
-        self.simple_export_button.pack(side="left")
-        self.all_elements_button = ttk.Button(actions, text="全要素一覧をExcel保存", command=self.export_all_elements)
-        self.all_elements_button.pack(side="left")
+        self.ml_export_button = ttk.Button(actions, text="学習データをExcel保存", command=self.export_ml)
+        self.ml_export_button.pack(side="left")
         self.ml_summary = ttk.Label(simple, text="自動候補は全XMLで共通する最も浅い繰り返し要素です。保存前に1行の意味を確認してください。", wraplength=900)
         self.ml_summary.pack(anchor="w")
         self.ml_preview = make_table(simple, ["プレビュー"], height=4)
         ttk.Label(simple, text="学習データ／出典／項目定義／出力情報の4種類のシートを保存。ID候補・定数列は項目定義で確認できます。", wraplength=900).pack(anchor="w")
+        self.all_elements_button = ttk.Button(container, text="従来の要素一覧を保存（属性をJSONで表示）", command=self.export_all_elements)
+        self.all_elements_button.pack(anchor="w", pady=(0, 6))
         ttk.Label(container, text="詳細出力：対象XML・列・条件を指定する場合は、以下を設定します。",
                   style="Muted.TLabel").pack(anchor="w", pady=(0, 4))
         horizontal = ttk.Scrollbar(container, orient="horizontal")
@@ -946,6 +967,46 @@ class Application:
         elif all(all(v is None or v == "" for v in row.cells[int(self.template.source_file):]) for row in rows):
             self.preview_text.insert("end", "\n警告: プレビューで抽出項目の値が見つかりません。設定したパスを確認してください。")
 
+    def reset_table_preview(self):
+        clear_tree(self.table_preview)
+        self.table_summary.configure(text="形式を選び、全要素プレビューを実行してください。")
+
+    def preview_all_table(self):
+        orientation = self.table_orientation.get()
+        self.run("全要素確認", lambda task: preview_table(self.store, orientation, task), self.show_table_preview)
+
+    def show_table_preview(self, result):
+        if result["orientation"] != self.table_orientation.get():
+            return
+        clear_tree(self.table_preview)
+        columns = tuple(f"c{i}" for i in range(len(result["headers"])))
+        self.table_preview.configure(columns=columns)
+        for column, name in zip(columns, result["headers"]):
+            self.table_preview.heading(column, text=name)
+            self.table_preview.column(column, width=180, minwidth=60, stretch=False)
+        for row in result["rows"]:
+            self.table_preview.insert("", "end", values=[display(value)[:80].replace("\n", "↵") for value in row])
+        count = f'・{result["columns"]:,}項目' if result["columns"] is not None else ""
+        self.table_summary.configure(text=f'{result["orientation"]}：{result["files"]:,}ファイル・{result["elements"]:,}要素{count}。プレビューは先頭20行・30列・各80文字まで。保存時はすべて出力します。')
+
+    def export_table(self):
+        if self.task:
+            return
+        if not self.store.files():
+            self.report(AppError("FILES_EMPTY: 先にXMLファイルを読み込んでください。"))
+            return
+        orientation = self.table_orientation.get()
+        target = filedialog.asksaveasfilename(title=f"簡単出力：全要素を{orientation}でExcel保存", defaultextension=".xlsx",
+                                            filetypes=[("Excelブック", "*.xlsx")],
+                                            initialfile="xml-all-wide.xlsx" if orientation == WIDE else "xml-all-long.xlsx")
+        if not target:
+            return
+        if Path(target).suffix.lower() != ".xlsx":
+            target += ".xlsx"
+        def done(result):
+            self.status.set(f'全要素・{result["orientation"]}保存 · 完了（{result["files"]:,}ファイル・{result["elements"]:,}要素・{result["values"]:,}値）')
+        self.run("全要素保存", lambda task: save_table(self.store, target, orientation, task), done)
+
     def ml_path(self):
         value = self.ml_record_path.get().strip()
         return None if value in ("", self.ml_auto) else "" if value == self.ml_file_unit else value
@@ -990,7 +1051,7 @@ class Application:
         target_column = self.ml_target.get().strip()
         if target_column == "未指定":
             target_column = ""
-        target = filedialog.asksaveasfilename(title="簡単出力：学習データをExcel保存", defaultextension=".xlsx",
+        target = filedialog.asksaveasfilename(title="機械学習向け出力：学習データをExcel保存", defaultextension=".xlsx",
                                             filetypes=[("Excelブック", "*.xlsx")], initialfile="xml-learning-data.xlsx")
         if not target:
             return
@@ -1141,6 +1202,7 @@ class Application:
                         child.destroy()
                 self.apply_template(Template())
                 self.reset_ml_preview()
+                self.reset_table_preview()
                 for variable in (self.search_text, self.filter_path, self.filter_value, self.filter_max,
                                  self.column_fields["path"], self.column_fields["name"]):
                     variable.set("")
