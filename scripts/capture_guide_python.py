@@ -163,6 +163,10 @@ def main():
         for record in records:
             app.tree.item(f'n{record["id"]}', open=True)
             app.expand_tree(f'n{record["id"]}')
+        app.pages['構造ビュー'].canvas.yview_moveto(0)
+        root.update()
+        unit = next(app.store.nodes(file, path='/root/record/header/unit'))
+        app.tree.see(f'n{unit["id"]}')
         capture('20-header-tree', '構造ビュー')
         root.update()
         app.tabs.select(app.pages['Excel出力'])
