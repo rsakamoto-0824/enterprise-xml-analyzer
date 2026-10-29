@@ -558,6 +558,7 @@ class Application:
             return 'break'
         iid = self.tree.identify_row(event.y)
         if iid in self.tree_nodes:
+            self.tree.focus_set()
             self.tree.focus(iid)
             self.tree.selection_set(iid)
             self.tree_selected()
