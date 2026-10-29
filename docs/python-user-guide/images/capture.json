@@ -17,7 +17,11 @@
     "08-preview.png",
     "09-saved.png",
     "10-settings.png",
+    "20-header-tree.png",
     "15-header-ranges.png",
+    "21-save-overview.png",
+    "22-header-coverage.png",
+    "23-record-unit.png",
     "16-header-wide.png",
     "19-header-long.png",
     "17-header-info.png",
@@ -36,6 +40,11 @@
   "header_sample_groups": 3,
   "header_sample_values": 17,
   "header_sample_links": 4,
+  "preflight_sheets_wide": 9,
+  "tree_header_paths": [
+    "/root/header",
+    "/root/record/header"
+  ],
   "resize": "800x600",
   "comparison_counts": {
     "ADDED": 0,
@@ -46,6 +55,6 @@
     "AMBIGUOUS": 0
   },
   "note": "Unedited real Tk application captures; synthetic samples only. Save chooser substituted, actual XLSX writer executed.",
-  "source_commit": "cd22bfca0b3285600b3ff138b0c8239d03f12635",
-  "github_actions_run": "https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions/runs/40681699386"
+  "source_commit": "3c094e9119378995937ab7df34aa459ca0c6955a",
+  "github_actions_run": "https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions/runs/40851136477"
 }
