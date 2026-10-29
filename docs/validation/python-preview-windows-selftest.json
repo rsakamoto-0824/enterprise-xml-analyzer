@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "python": "3.14.6",
+  "platform": "win32",
+  "architecture": "AMD64",
+  "tk": "8.6.15",
+  "frozen": true,
+  "files": 2,
+  "modified": 1,
+  "xlsx_rows": 4,
+  "all_element_rows": 10,
+  "ml_records": 4,
+  "ml_features": 2,
+  "ml_sheets": 4,
+  "minimum_window": "640x480",
+  "table_elements": 10,
+  "table_values": 14,
+  "table_wide_rows": 4,
+  "table_wide_columns": 2,
+  "table_long_rows": 8,
+  "table_header_groups": 4,
+  "table_header_values": 4,
+  "gui": "Tk application, background import, tree and canvas",
+  "network": "blocked",
+  "screenshots": [
+    "python-selftest-window.png",
+    "python-selftest-graph.png",
+    "python-selftest-simple.png",
+    "python-selftest-resize.png"
+  ]
+}

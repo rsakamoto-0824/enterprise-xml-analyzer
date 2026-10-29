@@ -99,6 +99,9 @@ def self_test(screenshot_dir=None):
                     assert time.monotonic() < deadline, "Whole table preview timed out"
                     time.sleep(0.01)
                 assert len(app.table_preview.get_children()) == rows
+                expected_sheets = app.last_result['sheets']
+                assert app.last_result['units'][0]['path'] == '/r/n'
+                assert '保存前チェック' in app.output_summary.cget('text')
                 with patch("xml_analyzer.gui.filedialog.asksaveasfilename", return_value=str(base / (orientation + ".xlsx"))):
                     app.simple_export_button.invoke()
                 deadline = time.monotonic() + 30
@@ -108,6 +111,7 @@ def self_test(screenshot_dir=None):
                     time.sleep(0.01)
                 assert app.last_result["elements"] == 10 and app.last_result["values"] == 14
                 assert app.last_result["data_rows"] == rows
+                assert app.last_result['sheets'] == len(expected_sheets)
                 if orientation == "横持ち":
                     assert app.last_result["columns"] == 2
                 assert app.last_result["header_groups"] == 4 and app.last_result["header_values"] == 4

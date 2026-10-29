@@ -100,6 +100,9 @@ class TableExportTests(unittest.TestCase):
         result = save_table(self.store, target)
         self.assertEqual(result['columns'], 16401)
         self.assertEqual(result['sheets'], 7)
+        overview = preview_table(self.store)
+        self.assertEqual(len(overview['sheets']), result['sheets'])
+        self.assertEqual([s['columns'] for s in overview['sheets'][:2]], [16384, 23])
         with zipfile.ZipFile(target) as archive:
             first = ET.fromstring(archive.read('xl/worksheets/sheet1.xml'))
             self.assertEqual(len(first.findall('.//{*}row')[0].findall('{*}c')), 16384)
@@ -173,6 +176,63 @@ class TableExportTests(unittest.TestCase):
         result = save_table(self.store, self.base / 'headers.xlsx', header_paths=['/r'])
         self.assertEqual(result['values'], 2)
         self.assertEqual(result['data_rows'], 0)
+
+    def assert_overview_matches_workbook(self, orientation, paths=()):
+        result = preview_table(self.store, orientation, header_paths=paths)
+        target = self.base / (orientation + '.xlsx')
+        saved = save_table(self.store, target, orientation, header_paths=paths)
+        with zipfile.ZipFile(target) as archive:
+            names = [s.attrib['name'] for s in ET.fromstring(archive.read('xl/workbook.xml')).findall('.//{*}sheet')]
+            actual = []
+            for index, name in enumerate(names, 1):
+                rows = ET.fromstring(archive.read(f'xl/worksheets/sheet{index}.xml')).findall('.//{*}row')
+                actual.append({'name': name, 'rows': len(rows) - 1, 'columns': len(rows[0].findall('{*}c'))})
+        self.assertEqual(result['sheets'], actual)
+        self.assertEqual(result['total_rows'], saved['rows'])
+        self.assertEqual(result['data_rows'], saved['data_rows'])
+        return result
+
+    def test_save_overview_matches_every_sheet_and_shows_actual_record_units(self):
+        file = self.parse('<root><header>shared</header><record><header>local</header><v>20</v></record><record><v>30</v></record></root>')
+        for orientation in (WIDE, LONG):
+            result = self.assert_overview_matches_workbook(orientation, ['/root/header', '/root/record/header'])
+            self.assertEqual(result['units'], [{'file': file['id'], 'path': '/root/record', 'records': 2}])
+            coverage = {row['path']: row for row in result['header_coverage']}
+            self.assertEqual((coverage['/root/header']['matches'], coverage['/root/header']['scope'], coverage['/root/header']['links']), (1, '共通', 2))
+            self.assertEqual((coverage['/root/record/header']['matches'], coverage['/root/record/header']['scope'], coverage['/root/record/header']['links']), (1, 'ノード内', 1))
+
+    def test_header_coverage_shows_missing_files_and_overlapping_range_merges(self):
+        a = self.parse('<r><h><id>001</id></h><n>1</n><n>2</n></r>')
+        b = self.parse('<r><n>3</n></r>', 'b.xml')
+        result = self.assert_overview_matches_workbook(WIDE, ['/r/h', '/r/h/id'])
+        rows = {(r['file'], r['path']): r for r in result['header_coverage']}
+        self.assertEqual((rows[a['id'], '/r/h']['matches'], rows[a['id'], '/r/h']['links']), (1, 2))
+        merged = rows[a['id'], '/r/h/id']
+        self.assertEqual((merged['matches'], merged['groups'], merged['scope'], merged['links']), (1, 0, '親範囲に統合', 0))
+        self.assertEqual(rows[b['id'], '/r/h']['scope'], '該当なし')
+        self.assertEqual(len(result['header_coverage']), 4)
+
+    def test_header_coverage_distinguishes_applicable_records_from_link_count(self):
+        self.parse('<r><n><h>A</h><h>B</h><v>1</v></n><n><v>2</v></n></r>')
+        result = self.assert_overview_matches_workbook(WIDE, ['/r/n/h'])
+        coverage = result['header_coverage'][0]
+        self.assertEqual((coverage['matches'], coverage['groups'], coverage['data_records'], coverage['links']), (2, 2, 1, 2))
+
+    def test_overview_counts_long_metadata_and_physical_row_splits(self):
+        self.parse('<r xmlns:p="' + 'u' * 40000 + '"><p:x>' + '😀' * 20000 + '</p:x></r>')
+        from xml_analyzer.models import Template
+        with patch('xml_analyzer.table_export.Template', side_effect=lambda **kwargs: Template(sheet_rows=2, **kwargs)):
+            for orientation in (WIDE, LONG):
+                self.assert_overview_matches_workbook(orientation)
+
+    def test_overview_handles_root_only_and_all_header_documents(self):
+        self.parse('<r id="001">A</r>')
+        self.assert_overview_matches_workbook(WIDE)
+        result = self.assert_overview_matches_workbook(LONG, ['/r'])
+        self.assertEqual(result['data_records'], 0)
+        self.assertEqual(result['units'], [])
+        self.assertNotIn('全要素_縦持ち', [sheet['name'] for sheet in result['sheets']])
+        self.assertEqual(result['header_coverage'][0]['links'], 0)
 
     def test_empty_bad_format_cancel_and_limit_preserve_existing_file(self):
         target = self.base / 'existing.xlsx'

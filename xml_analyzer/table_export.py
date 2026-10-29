@@ -8,7 +8,7 @@ import tempfile
 from pathlib import Path
 
 from .extraction import OutputRow
-from .models import AppError, Column, Task, Template
+from .models import AppError, Column, MAX_EXPORT_ROWS, Task, Template
 from .simple_export import cell_chunks, direct_text_fragments
 from .writers import column_letter, write_xlsx
 
@@ -21,6 +21,7 @@ LONG_HEADERS = SOURCE_HEADERS + ["要素番号", "ノード", "項目名", "値"
 PREVIEW_ROWS = 20
 PREVIEW_COLUMNS = 30
 MAX_HEADER_RANGES = 256
+PREVIEW_UNIT_LIMIT = 100
 HEADER_HEADERS = ["ヘッダーID"] + SOURCE_HEADERS[:2] + LONG_HEADERS[3:]
 LINK_HEADERS = ["データID", "ヘッダーID", "元ファイル", "ファイルID", "適用範囲"]
 
@@ -144,15 +145,17 @@ def prepare_table(store, task, header_paths=()):
             db.executescript('''PRAGMA cache_size=-8192;
                 PRAGMA journal_mode=OFF;
                 PRAGMA synchronous=OFF;
-                CREATE TABLE records(seq INTEGER PRIMARY KEY,id TEXT UNIQUE,file TEXT,element INTEGER,path TEXT);
+                CREATE TABLE records(seq INTEGER PRIMARY KEY,id TEXT UNIQUE,file TEXT,element INTEGER,path TEXT,selector TEXT);
                 CREATE INDEX records_file ON records(file,element);
                 CREATE TABLE fields(id INTEGER PRIMARY KEY,key TEXT UNIQUE,node TEXT,name TEXT,
                     path TEXT,kind TEXT,part INTEGER,present INTEGER);
                 CREATE TABLE vals(record TEXT,field INTEGER,seq INTEGER,element INTEGER,node TEXT,name TEXT,path TEXT,value TEXT,
                     PRIMARY KEY(record,field)) WITHOUT ROWID;
                 CREATE INDEX vals_seq ON vals(seq);
-                CREATE TABLE header_groups(id TEXT PRIMARY KEY,file TEXT,element INTEGER,scope INTEGER);
+                CREATE TABLE header_groups(id TEXT PRIMARY KEY,file TEXT,element INTEGER,scope INTEGER,selector TEXT);
                 CREATE INDEX header_scope ON header_groups(file,scope);
+                CREATE INDEX header_selector ON header_groups(file,selector);
+                CREATE TABLE header_matches(file TEXT,path TEXT,matches INTEGER,PRIMARY KEY(file,path));
                 CREATE TABLE header_items(group_id TEXT,file TEXT,element INTEGER,node TEXT,name TEXT,path TEXT,kind TEXT,part INTEGER,value TEXT);
                 CREATE TABLE common(file TEXT,element INTEGER,node TEXT,name TEXT,path TEXT,kind TEXT,part INTEGER,value TEXT);''')
             matched, selected = set(), set(ranges)
@@ -165,11 +168,14 @@ def prepare_table(store, task, header_paths=()):
                         active = None
                     if item.selector in selected:
                         matched.add(item.selector)
+                        if item.kind == '要素' and item.part == 1:
+                            db.execute('''INSERT INTO header_matches VALUES(?,?,1) ON CONFLICT(file,path)
+                                          DO UPDATE SET matches=matches+1''', (current_file, item.selector))
                         if not active:
                             active, end = f'{current_file}:H:{item.element}', item.end
                             # A selected entire outermost record is a file-level header; a header inside it belongs only to that record.
                             scope = item.record if item.record != item.element else 0
-                            db.execute('INSERT INTO header_groups VALUES(?,?,?,?)', (active, current_file, item.element, scope))
+                            db.execute('INSERT INTO header_groups VALUES(?,?,?,?,?)', (active, current_file, item.element, scope, item.selector))
                     metadata = (current_file, item.element, item.node, item.name, item.path, item.kind, item.part, item.value)
                     values += 1
                     if active:
@@ -181,8 +187,8 @@ def prepare_table(store, task, header_paths=()):
                     else:
                         record = data_id(current_file, item.record)
                         if item.is_record:
-                            db.execute('INSERT OR IGNORE INTO records(id,file,element,path) VALUES(?,?,?,?)',
-                                       (record, current_file, item.record, item.path))
+                            db.execute('INSERT OR IGNORE INTO records(id,file,element,path,selector) VALUES(?,?,?,?,?)',
+                                       (record, current_file, item.record, item.path, item.selector))
                         node, _, name = item.column.rpartition('/')
                         field = db.execute('''INSERT INTO fields(key,node,name,path,kind,part,present)
                             VALUES(?,?,?,?,?,?,1) ON CONFLICT(key) DO UPDATE SET present=present+1 RETURNING id''',
@@ -236,6 +242,10 @@ def wide_rows(plan, task):
         headers = SOURCE_HEADERS + [field_title(field) for field in fields]
         for record in plan.db.execute('SELECT * FROM records ORDER BY seq'):
             yield OutputRow(sheet, headers, TableCells(plan, record, start, count, task))
+    yield from field_rows(plan, task)
+
+
+def field_rows(plan, task):
     headers = ['項目番号', 'シート', 'Excel列', '列名', 'ノード', '項目名', '要素パス', '種類', '値分割番号', '存在データ数', '表示分割番号']
     for field in plan.db.execute('SELECT * FROM fields ORDER BY id'):
         task.check()
@@ -353,6 +363,83 @@ def plan_summary(plan, orientation):
             'common_values': plan.common_values, 'data_values': plan.data_values}
 
 
+def header_coverage(plan, task):
+    """Summarize selected paths, including matches merged into an outer header."""
+    result = []
+    for file in plan.files:
+        records = plan.db.execute('SELECT count(*) FROM records WHERE file=?', (file['id'],)).fetchone()[0]
+        matches = dict(plan.db.execute('SELECT path,matches FROM header_matches WHERE file=?', (file['id'],)))
+        groups = {row['selector']: row for row in plan.db.execute('''
+            SELECT h.selector,count(*) AS groups,sum(h.scope=0) AS common,
+                   sum(h.scope!=0) AS local,count(r.id) AS local_links,count(DISTINCT r.id) AS local_records
+            FROM header_groups h LEFT JOIN records r ON r.file=h.file AND r.element=h.scope
+            WHERE h.file=? GROUP BY h.selector''', (file['id'],))}
+        for path in plan.ranges:
+            task.check()
+            group = groups.get(path)
+            common, local = (group['common'], group['local']) if group else (0, 0)
+            scope = '共通＋ノード内' if common and local else '共通' if common else 'ノード内' if local else '親範囲に統合' if matches.get(path) else '該当なし'
+            result.append({'file': file['id'], 'name': file['name'], 'path': path,
+                           'matches': matches.get(path, 0), 'groups': group['groups'] if group else 0,
+                           'scope': scope, 'data_records': records if common else group['local_records'] if group else 0,
+                           'links': common * records + (group['local_links'] if group else 0)})
+    return result
+
+
+def output_overview(plan, orientation, task):
+    coverage = header_coverage(plan, task)
+    sheets, total = [], 0
+    sheet_rows = Template().sheet_rows
+
+    def add(name, rows, columns):
+        nonlocal total
+        total += rows
+        if total > MAX_EXPORT_ROWS:
+            raise AppError('EXPORT_LIMIT: 出力の安全上限200万行に達しました。対象を分割してください。')
+        for offset in range(0, rows, sheet_rows):
+            if len(sheets) >= 512:
+                raise AppError('SHEET_LIMIT: シート数の安全上限512に達しました。')
+            part = offset // sheet_rows + 1
+            sheets.append({'name': name if part == 1 else name[:25] + f'-{part}',
+                           'rows': min(sheet_rows, rows - offset), 'columns': columns})
+
+    def count(generator):
+        counts = {}
+        try:
+            for row in generator:
+                task.check()
+                rows, columns = counts.get(row.sheet, (0, len(row.headers)))
+                counts[row.sheet] = (rows + 1, columns)
+                if (rows + 1) % 500 == 0:
+                    task.progress('保存前のシート件数を確認', rows + 1, 0)
+        finally:
+            generator.close()
+        for name, (rows, columns) in counts.items():
+            add(name, rows, columns)
+        return sum(rows for rows, _ in counts.values())
+
+    # Count wide data without visiting every empty cell in a large sparse table.
+    if orientation == WIDE:
+        for start in range(0, plan.columns, VALUE_COLUMNS):
+            task.check()
+            add(f'全要素_横持ち_{start // VALUE_COLUMNS + 1}', plan.records,
+                len(SOURCE_HEADERS) + min(VALUE_COLUMNS, plan.columns - start))
+        count(field_rows(plan, task))
+        data_rows = plan.records
+    else:
+        data_rows = count(item_rows(plan, task))
+    count(item_rows(plan, task, 'header'))
+    count(item_rows(plan, task, 'common'))
+    count(data_index_rows(plan, task))
+    add('紐づけ', sum(row['links'] for row in coverage), len(LINK_HEADERS))
+    count(information_rows(plan, orientation, task))
+    units = [dict(row) for row in plan.db.execute('''SELECT file,selector AS path,count(*) AS records
+        FROM records GROUP BY file,selector ORDER BY min(seq) LIMIT ?''', (PREVIEW_UNIT_LIMIT + 1,))]
+    return {'sheets': sheets, 'total_rows': total, 'data_rows': data_rows, 'header_coverage': coverage,
+            'units': units[:PREVIEW_UNIT_LIMIT], 'more_units': len(units) > PREVIEW_UNIT_LIMIT,
+            'header_paths': plan.ranges, 'file_ids': tuple(file['id'] for file in plan.files)}
+
+
 def first_rows(generator, limit=PREVIEW_ROWS):
     try:
         rows = []
@@ -382,4 +469,4 @@ def preview_table(store, orientation=WIDE, task=None, header_paths=()):
                     'ヘッダー情報': {'headers': HEADER_HEADERS, 'rows': first_rows(item_rows(plan, task, 'header'))},
                     '紐づけ': {'headers': LINK_HEADERS, 'rows': first_rows(link_rows(plan, task))},
                     '共通データ': {'headers': LONG_HEADERS, 'rows': first_rows(item_rows(plan, task, 'common'))}}
-        return previews['中身のデータ'] | plan_summary(plan, orientation) | {'previews': previews}
+        return previews['中身のデータ'] | plan_summary(plan, orientation) | output_overview(plan, orientation, task) | {'previews': previews}

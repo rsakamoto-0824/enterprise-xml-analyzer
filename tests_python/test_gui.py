@@ -305,6 +305,8 @@ class GuiTests(unittest.TestCase):
         self.assertIn('TABLE_SETTINGS', self.app.status.get())
         for orientation in ('横持ち', '縦持ち'):
             self.app.table_orientation.set(orientation)
+            self.app.preview_all_table()
+            self.wait()
             target = self.base / (orientation + '.xlsx')
             with patch('xml_analyzer.gui.filedialog.asksaveasfilename', return_value=str(target)):
                 self.app.export_table()
@@ -319,6 +321,91 @@ class GuiTests(unittest.TestCase):
         self.wait()
         self.assertEqual(self.app.header_paths.get('1.0', 'end').strip(), '')
         self.assertIsNone(self.app.table_preview_result)
+
+    def test_tree_header_checks_color_all_occurrences_and_loaded_descendants(self):
+        file = self.load('<r><h><id>001</id></h><n><header>A</header><v>20</v></n><n><header>B</header><v>30</v></n></r>')
+        header = next(self.app.store.nodes(file, path='/r/n/header'))
+        self.app.jump_to_node(header)
+        self.app.toggle_tree_header()
+        self.root.update()
+        self.assertEqual(self.app.selected_header_paths(), ('/r/n/header',))
+        iid = f'n{header["id"]}'
+        self.assertEqual(self.app.tree.set(iid, 'header'), '☑')
+        self.assertIn('header-root', self.app.tree.item(iid, 'tags'))
+        parent = next(self.app.store.nodes(file, path='/r/n', start=header['end_id']))
+        self.app.jump_to_node(parent)
+        self.app.expand_tree(f'n{parent["id"]}')
+        second = next(self.app.store.nodes(file, path='/r/n/header', start=header['end_id']))
+        self.assertEqual(self.app.tree.set(f'n{second["id"]}', 'header'), '☑')
+        self.app.jump_to_node(next(self.app.store.nodes(file, path='/r/h')))
+        self.app.toggle_tree_header()
+        self.app.expand_tree(f'n{self.app.selected["id"]}')
+        child = next(self.app.store.nodes(file, path='/r/h/id'))
+        self.assertEqual(self.app.tree.set(f'n{child["id"]}', 'header'), '配下')
+        self.assertIn('header-child', self.app.tree.item(f'n{child["id"]}', 'tags'))
+        self.app.toggle_tree_header()
+        self.assertEqual(self.app.tree.set(f'n{child["id"]}', 'header'), '☐')
+        self.app.clear_header_ranges()
+        self.assertFalse(self.app.tree.item(f'n{child["id"]}', 'tags'))
+
+    def test_save_requires_current_overview_and_header_report_shows_scopes(self):
+        self.load('<r><h>shared</h><n><header>local</header><v>20</v></n><n><v>30</v></n></r>')
+        self.app.set_header_ranges(('/r/h', '/r/n/header'))
+        with patch('xml_analyzer.gui.filedialog.asksaveasfilename') as choose:
+            self.app.export_table()
+            self.wait()
+            choose.assert_not_called()
+        self.assertIn('データ2件 → 中身2行', self.app.output_summary.cget('text'))
+        self.assertIn('確認し', self.app.status.get())
+        self.app.output_view.set('1行の単位')
+        self.app.show_output_overview()
+        self.assertIn('/r/n', str(self.app.output_overview.item(self.app.output_overview.get_children()[0], 'values')))
+        self.app.output_view.set('ヘッダーの適用範囲')
+        self.app.show_output_overview()
+        scopes = [self.app.output_overview.item(iid, 'values')[4] for iid in self.app.output_overview.get_children()]
+        self.assertEqual(scopes, ['共通', 'ノード内'])
+        target = self.base / 'reviewed.xlsx'
+        with patch('xml_analyzer.gui.filedialog.asksaveasfilename', return_value=str(target)):
+            self.app.export_table()
+        self.wait()
+        self.assertTrue(target.exists())
+        self.app.table_orientation.set('縦持ち')
+        with patch('xml_analyzer.gui.filedialog.asksaveasfilename') as choose:
+            self.app.export_table()
+            self.wait()
+            choose.assert_not_called()
+        self.assertIn('中身4行', self.app.output_summary.cget('text'))
+        self.app.clear_header_ranges()
+        self.assertEqual(self.app.output_overview.get_children(), ())
+        self.assertIn('未確認', self.app.output_summary.cget('text'))
+
+    def test_tree_checkbox_click_and_busy_state_do_not_change_header_ranges(self):
+        from types import SimpleNamespace
+        file = self.load('<r xmlns:p="urn:a"><p:h>A</p:h><n>B</n></r>')
+        node = next(self.app.store.nodes(file, path='/r/{urn%3Aa}h'))
+        self.app.jump_to_node(node)
+        self.app.tabs.select(self.app.pages['構造ビュー'])
+        self.root.geometry('1100x800')
+        self.root.deiconify()
+        self.root.update()
+        box = self.app.tree.bbox(f'n{node["id"]}', 'header')
+        self.assertTrue(box)
+        event = SimpleNamespace(x=box[0] + box[2] // 2, y=box[1] + box[3] // 2)
+        self.root.focus_force()
+        self.app.header_tree_click(event)
+        self.assertEqual(self.root.focus_get(), self.app.tree)
+        self.assertEqual(self.app.selected_header_paths(), ('/r/{urn%3Aa}h',))
+        self.app.tree.event_generate('<space>')
+        self.root.update()
+        self.assertEqual(self.app.selected_header_paths(), ())
+        self.app.header_tree_click(event)
+        self.app.preview_all_table()
+        self.app.header_tree_click(event)
+        self.app.toggle_tree_header()
+        self.assertEqual(self.app.selected_header_paths(), ('/r/{urn%3Aa}h',))
+        self.wait()
+        self.app.header_tree_click(event)
+        self.assertEqual(self.app.selected_header_paths(), ())
 
     def test_resize_all_pages_and_wrapped_buttons_keep_state(self):
         from tkinter import ttk

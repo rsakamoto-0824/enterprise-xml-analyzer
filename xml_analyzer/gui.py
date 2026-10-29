@@ -27,6 +27,7 @@ from .writers import atomic_target, write_csv, write_xlsx
 
 MAX_SIMPLE_SETTINGS_BYTES = 1048576
 ID_PREVIEW_CHARS = 6
+OVERVIEW_TEXT_CHARS = 200
 
 
 def display(value):
@@ -70,7 +71,7 @@ class Application:
         self.messages = queue.Queue()
         self.logs = []
         self.template = Template()
-        self.tree_nodes, self.more_nodes = {}, {}
+        self.tree_nodes, self.tree_details, self.more_nodes = {}, {}, {}
         self.comparison = None
         self.diff_offset = 0
         self.diff_rows = {}
@@ -119,6 +120,7 @@ class Application:
         self.graph.pack(fill="both", expand=True)
         self._compare_page()
         self._export_page()
+        self.update_header_selection()
         self.statistics = tk.Text(self.contents["統計"], height=12, wrap="word", font=("Yu Gothic UI", 11))
         self.statistics.pack(fill="both", expand=True)
         self._settings_page()
@@ -166,7 +168,7 @@ class Application:
         self.title_label.configure(font=("Yu Gothic UI", 15 if compact else 19, "bold"))
         def wrap(widget):
             for child in widget.winfo_children():
-                if isinstance(child, ttk.Label) and int(child.cget("wraplength") or 0) > 0:
+                if isinstance(child, ttk.Label) and child is not getattr(self, 'header_selection_hint', None) and int(child.cget("wraplength") or 0) > 0:
                     child.configure(wraplength=max(200, width - 80))
                 if isinstance(child, FlowFrame):
                     child.schedule()
@@ -386,8 +388,10 @@ class Application:
         self.selected = None
         clear_tree(self.tree)
         self.tree_nodes.clear()
+        self.tree_details.clear()
         self.more_nodes.clear()
         self.set_detail("")
+        self.update_header_selection()
         self.graph.load(None)
         if file_id:
             self.add_children("", file_id, 0)
@@ -430,7 +434,12 @@ class Application:
         left, right = ttk.Frame(panes), ttk.Frame(panes)
         panes.add(left, weight=3)
         panes.add(right, weight=2)
-        self.tree = ttk.Treeview(left, show="tree", selectmode="browse")
+        self.tree = ttk.Treeview(left, columns=('header',), show=('tree', 'headings'), selectmode="browse")
+        self.tree.heading('#0', text='XML構造')
+        self.tree.heading('header', text='ヘッダー')
+        self.tree.column('header', width=90, minwidth=75, stretch=False, anchor='center')
+        self.tree.tag_configure('header-root', background='#d5e8f8', foreground='#173a52')
+        self.tree.tag_configure('header-child', background='#eef5fb', foreground='#173a52')
         scroll = ttk.Scrollbar(left, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=scroll.set)
         scroll.pack(side="right", fill="y")
@@ -441,6 +450,15 @@ class Application:
         self.tree.bind("<<TreeviewOpen>>", lambda e: self.expand_tree(self.tree.focus()))
         self.tree.bind("<<TreeviewSelect>>", self.tree_selected)
         self.tree.bind("<Double-1>", self.activate_more)
+        self.tree.bind('<Button-1>', self.header_tree_click)
+        self.tree.bind('<space>', lambda _: self.toggle_tree_header())
+        self.header_checked = tk.BooleanVar()
+        self.header_check = ttk.Checkbutton(right, text='この要素と配下をヘッダーにする',
+                                            variable=self.header_checked, command=self.toggle_selected_header)
+        self.header_check.pack(fill='x', pady=3)
+        self.header_selection_hint = ttk.Label(right, text='チェック欄またはSpaceで切替。同じ要素パスの全出現に適用します。', wraplength=300)
+        self.header_selection_hint.pack(fill='x', pady=3)
+        ttk.Button(right, text='ヘッダーの適用範囲を確認', command=self.review_header_ranges).pack(fill='x', pady=3)
         ttk.Button(right, text="この要素を出力の1行にする", command=self.use_record).pack(fill="x", pady=3)
         ttk.Button(right, text="選択サブツリーをグラフ表示", command=self.focus_graph).pack(fill="x", pady=3)
         ttk.Button(right, text="XML断片を表示", command=self.show_fragment).pack(fill="x", pady=3)
@@ -463,6 +481,8 @@ class Application:
                 continue
             self.tree.insert(parent_item, "end", iid=iid, text=n["name"] + (f'  子 {n["children"]}' if n["children"] else ""))
             self.tree_nodes[iid] = n["id"]
+            self.tree_details[iid] = n
+            self.mark_header_node(iid)
             if n["children"]:
                 self.tree.insert(iid, "end", iid=iid + "-pending", text="読み込み…")
         if len(batch) > PAGE_SIZE:
@@ -477,6 +497,8 @@ class Application:
             self.add_children(iid, self.file_id(), self.tree_nodes[iid])
 
     def activate_more(self, event=None):
+        if event is not None and self.tree.identify_column(event.x) == '#1':
+            return 'break'
         iid = self.tree.focus()
         if iid in self.more_nodes:
             args = self.more_nodes.pop(iid)
@@ -493,6 +515,79 @@ class Application:
             attrs = json.dumps(json.loads(n["attrs"]), ensure_ascii=False, indent=2)
             text = self.store.direct_text(n)
             self.set_detail(f'{n["name"]}\n\nインスタンスパス\n{self.store.instance_path(n)}\n\n構造パス\n{n["path"]}\n\nNamespace: {n["uri"] or "なし"}\n深さ: {n["depth"]} / 子ノード: {n["children"]}\n\n属性\n{attrs[:65536]}\n\nテキスト（先頭64Ki文字）\n{text[:65536]}')
+            self.update_header_selection()
+
+    def selected_header_paths(self):
+        if not hasattr(self, 'header_paths'):
+            return ()
+        try:
+            return header_ranges(self.header_paths.get('1.0', 'end'))
+        except AppError:
+            return ()
+
+    def mark_header_node(self, iid, paths=None):
+        paths = self.selected_header_paths() if paths is None else paths
+        node = self.tree_details[iid]
+        selected = node['kind'] == 'element' and node['path'] in paths
+        covered = any(node['path'].startswith(path + '/') for path in paths)
+        mark = '☑' if selected else '配下' if covered else '☐' if node['kind'] == 'element' else ''
+        tag = 'header-root' if selected else 'header-child' if covered else ''
+        self.tree.item(iid, values=(mark,), tags=(tag,) if tag else ())
+
+    def refresh_header_marks(self):
+        paths = self.selected_header_paths()
+        for iid in self.tree_details:
+            if self.tree.exists(iid):
+                self.mark_header_node(iid, paths)
+        self.update_header_selection()
+
+    def update_header_selection(self):
+        node = self.selected
+        paths = self.selected_header_paths()
+        selected = node and node['kind'] == 'element' and node['path'] in paths
+        self.header_checked.set(bool(selected))
+        covered = node and any(node['path'].startswith(path + '/') for path in paths)
+        self.header_check.state(['!disabled'] if node and node['kind'] == 'element' and not self.task else ['disabled'])
+        self.header_selection_hint.configure(text='親の指定範囲に含まれています。外す場合は親のチェックを解除してください。' if covered and not selected
+                                              else 'チェック欄またはSpaceで切替。同じ要素パスの全出現に適用します。')
+
+    def header_tree_click(self, event):
+        if self.tree.identify_region(event.x, event.y) != 'cell' or self.tree.identify_column(event.x) != '#1':
+            return
+        if self.task:
+            return 'break'
+        iid = self.tree.identify_row(event.y)
+        if iid in self.tree_nodes:
+            self.tree.focus_set()
+            self.tree.focus(iid)
+            self.tree.selection_set(iid)
+            self.tree_selected()
+            self.toggle_tree_header()
+        return 'break'
+
+    def toggle_tree_header(self):
+        node = self.tree_details.get(self.tree.focus())
+        if not self.task and node and node['kind'] == 'element':
+            self.tree_selected()
+            self.header_checked.set(not self.header_checked.get())
+            self.toggle_selected_header()
+        return 'break'
+
+    def toggle_selected_header(self):
+        if self.task or not self.selected or self.selected['kind'] != 'element':
+            return
+        try:
+            paths = list(header_ranges(self.header_paths.get('1.0', 'end')))
+            path = self.selected['path']
+            if self.header_checked.get():
+                if path not in paths:
+                    paths.append(path)
+            elif path in paths:
+                paths.remove(path)
+            self.set_header_ranges(header_ranges(paths))
+        except AppError as error:
+            self.update_header_selection()
+            self.report(error)
 
     def set_detail(self, text):
         self.detail.configure(state="normal")
@@ -514,6 +609,8 @@ class Application:
             if not self.tree.exists(iid):
                 self.tree.insert(parent, "end", iid=iid, text=item["name"])
                 self.tree_nodes[iid] = item["id"]
+                self.tree_details[iid] = item
+                self.mark_header_node(iid)
                 if item["children"]:
                     self.tree.insert(iid, "end", iid=iid + "-pending", text="読み込み…")
             self.tree.item(iid, open=True)
@@ -710,16 +807,23 @@ class Application:
         self.simple_export_button.pack(side="left", padx=3)
         ttk.Label(whole, text="横持ち：文書ルート直下のデータノード＝1行。縦持ち：ノード・項目名・値を行で表示。値は文字列として保持します。",
                   wraplength=900).pack(anchor="w")
-        ttk.Label(whole, text="ヘッダー範囲（任意・要素パスを1行ずつ指定。指定要素と配下全体を分離）").pack(anchor="w", pady=(5, 0))
+        ttk.Label(whole, text="ヘッダー範囲（構造ツリーでチェック、または要素パスを1行ずつ入力）").pack(anchor="w", pady=(5, 0))
         self.header_paths = tk.Text(whole, height=2, width=30, wrap="none")
         self.header_paths.pack(fill="x")
         header_actions = FlowFrame(whole)
         header_actions.pack(fill="x", pady=3)
-        for label, command in (("構造ビューの選択要素を追加", self.add_header_range), ("範囲をクリア", self.clear_header_ranges),
+        for label, command in (("構造ツリーでヘッダーを選択", self.open_header_tree), ("構造ビューの選択要素を追加", self.add_header_range), ("範囲をクリア", self.clear_header_ranges),
                                ("簡単出力設定を保存", self.save_table_settings), ("簡単出力設定を読込", self.load_table_settings)):
             ttk.Button(header_actions, text=label, command=command).pack(side="left", padx=3)
         ttk.Label(whole, text="IDは画面では短縮表示し、Excelには完全なIDを保存。「紐づけ」シートで対応づけます。ルート自身の値・属性は「共通データ」に保持します。",
                   wraplength=900).pack(anchor="w")
+        self.output_summary = ttk.Label(whole, text='保存前チェック：全要素プレビューで、1行の単位・件数・列数・作成シートを確認します。', wraplength=900)
+        self.output_summary.pack(anchor='w', pady=(6, 0))
+        self.output_view = ttk.Combobox(whole, state='readonly', values=('作成シート', '1行の単位', 'ヘッダーの適用範囲'), width=24)
+        self.output_view.set('作成シート')
+        self.output_view.pack(anchor='w', pady=3)
+        self.output_view.bind('<<ComboboxSelected>>', lambda _: self.show_output_overview())
+        self.output_overview = make_table(whole, ['保存前チェック'], height=4)
         preview_actions = FlowFrame(whole)
         preview_actions.pack(fill="x", pady=3)
         ttk.Label(preview_actions, text="表示する内容").pack(side="left", padx=3)
@@ -993,24 +1097,43 @@ class Application:
         self.table_preview_result = None
         clear_tree(self.table_preview)
         self.table_summary.configure(text="形式を選び、全要素プレビューを実行してください。")
+        clear_tree(self.output_overview)
+        self.output_summary.configure(text='保存前チェック：設定が未確認です。全要素プレビューを実行してください。')
 
     def header_ranges_changed(self, _=None):
         if self.header_paths.edit_modified():
             self.header_paths.edit_modified(False)
             self.reset_table_preview()
+            self.refresh_header_marks()
+
+    def set_header_ranges(self, paths):
+        paths = header_ranges(paths)
+        self.header_paths.delete('1.0', 'end')
+        self.header_paths.insert('1.0', '\n'.join(paths))
+        self.header_paths.edit_modified(False)
+        self.reset_table_preview()
+        self.refresh_header_marks()
+
+    def open_header_tree(self):
+        self.tabs.select(self.pages['構造ビュー'])
+        self.pages['構造ビュー'].reveal(self.tree)
+        self.tree.focus_set()
+
+    def review_header_ranges(self):
+        self.output_view.set('ヘッダーの適用範囲')
+        self.tabs.select(self.pages['Excel出力'])
+        self.pages['Excel出力'].reveal(self.output_summary)
+        self.preview_all_table()
 
     def clear_header_ranges(self):
-        self.header_paths.delete("1.0", "end")
-        self.reset_table_preview()
+        self.set_header_ranges(())
 
     def add_header_range(self):
         if not self.selected or self.selected["kind"] != "element":
             self.report(AppError("HEADER_SELECT: 構造ビューでヘッダーにする要素を選択してください。"))
             return
-        paths = [path for path in self.header_paths.get("1.0", "end").splitlines() if path.strip()]
-        if self.selected["path"] not in paths:
-            self.header_paths.insert("end", ("\n" if paths else "") + self.selected["path"])
-        self.reset_table_preview()
+        self.header_checked.set(True)
+        self.toggle_selected_header()
 
     def save_table_settings(self):
         try:
@@ -1040,8 +1163,7 @@ class Application:
                     or not all(isinstance(path, str) for path in settings["header_paths"])):
                 raise ValueError()
             paths = header_ranges(settings["header_paths"])
-            self.header_paths.delete("1.0", "end")
-            self.header_paths.insert("1.0", "\n".join(paths))
+            self.set_header_ranges(paths)
             self.table_orientation.set(settings["orientation"])
             self.reset_table_preview()
         except (OSError, ValueError, AppError, RecursionError) as error:
@@ -1056,10 +1178,45 @@ class Application:
             self.report(error)
 
     def show_table_preview(self, result):
-        if result["orientation"] != self.table_orientation.get():
+        if result["orientation"] != self.table_orientation.get() or tuple(result['header_paths']) != self.selected_header_paths():
             return
         self.table_preview_result = result
         self.show_cached_table_preview()
+        self.show_output_overview()
+
+    def show_output_overview(self):
+        result = self.table_preview_result
+        if not result:
+            return
+        files = {file['id']: f'{file["name"]} [{file["id"][:ID_PREVIEW_CHARS]}]' for file in self.files}
+        view = self.output_view.get()
+        if view == '作成シート':
+            headers = ['シート名', 'データ行数', '列数（ID等を含む）']
+            rows = [(row['name'], f'{row["rows"]:,}', f'{row["columns"]:,}') for row in result['sheets']]
+        elif view == '1行の単位':
+            headers = ['元ファイル', '横持ち1行／縦持ちデータIDの基準パス', 'データ件数']
+            rows = [(files[row['file']], row['path'], f'{row["records"]:,}') for row in result['units']]
+        else:
+            headers = ['元ファイル', 'ヘッダー範囲', '該当件数', '分離件数', '適用範囲', '適用データ件数', '対応数']
+            rows = [(files[row['file']], row['path'], row['matches'], row['groups'], row['scope'], row['data_records'], row['links'])
+                    for row in result['header_coverage']]
+        clear_tree(self.output_overview)
+        columns = tuple(f'c{i}' for i in range(len(headers)))
+        self.output_overview.configure(columns=columns, displaycolumns=columns)
+        widths = {'元ファイル': 170, 'ヘッダー範囲': 210, '該当件数': 80, '分離件数': 80,
+                  '適用範囲': 90, '適用データ件数': 120, '対応数': 80}
+        for column, name in zip(columns, headers):
+            self.output_overview.heading(column, text=name)
+            self.output_overview.column(column, width=widths.get(name, 360 if 'パス' in name else 180), minwidth=80, stretch=False)
+        for row in rows:
+            self.output_overview.insert('', 'end', values=[display(value)[:OVERVIEW_TEXT_CHARS] for value in row])
+        unit = '文書ルート直下のデータ要素1件＝1行（子要素がなければルート）' if result['orientation'] == WIDE else '要素の直接テキスト・属性値＝1行（長い値・表示項目は分割）'
+        missing = sum(row['matches'] == 0 for row in result['header_coverage'])
+        notice = f' ヘッダーが該当しないXML・範囲の組合せが{missing}件あります。' if missing else ''
+        if result['more_units']:
+            notice += ' 1行の単位は先頭100種類を表示しています。'
+        column_text = f'項目{result["columns"]:,}列＋元ファイル・ID等3列' if result['orientation'] == WIDE else '中身11列（ID等を含む）'
+        self.output_summary.configure(text=f'保存前チェック：{unit}。\n{result["files"]}XML・データ{result["data_records"]:,}件 → 中身{result["data_rows"]:,}行。{column_text}・作成{len(result["sheets"])}シート。シート一覧の行数は見出し行を除き、分割後の件数です。{notice}')
 
     def show_cached_table_preview(self):
         result = self.table_preview_result
@@ -1098,6 +1255,16 @@ class Application:
             paths = header_ranges(self.header_paths.get("1.0", "end"))
         except AppError as error:
             self.report(error)
+            return
+        result = self.table_preview_result
+        if (not result or result['orientation'] != orientation or tuple(result['header_paths']) != paths
+                or tuple(result['file_ids']) != tuple(file['id'] for file in self.store.files())):
+            def checked(result):
+                self.show_table_preview(result)
+                self.tabs.select(self.pages['Excel出力'])
+                self.pages['Excel出力'].reveal(self.output_summary)
+                self.status.set('保存前チェックを作成しました。内容を確認し、「全要素をExcel保存」を押してください。')
+            self.run('保存前チェック', lambda task: preview_table(self.store, orientation, task, paths), checked)
             return
         target = filedialog.asksaveasfilename(title=f"簡単出力：全要素を{orientation}でExcel保存", defaultextension=".xlsx",
                                             filetypes=[("Excelブック", "*.xlsx")],

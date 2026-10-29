@@ -15,7 +15,7 @@
   <a class="skip-link" href="#main-content">本文へ移動</a>
   <button id="toc-toggle" class="toc-toggle" type="button" aria-controls="sidebar" aria-expanded="false">☰ 目次</button>
   <aside id="sidebar" class="sidebar" aria-label="目次">
-    <div class="sidebar-header"><p class="eyebrow">Windows Desktop · v2.4</p><p class="sidebar-title">Enterprise XML<br>Analyzer</p><p class="sidebar-subtitle">スクリーンショット付き操作手順書</p></div>
+    <div class="sidebar-header"><p class="eyebrow">Windows Desktop · v2.5</p><p class="sidebar-title">Enterprise XML<br>Analyzer</p><p class="sidebar-subtitle">スクリーンショット付き操作手順書</p></div>
     <nav><ol class="toc-list">
       <li><a href="#overview">01 目的と対象</a></li><li><a href="#prepare">02 展開したフォルダの確認</a></li><li><a href="#workflow">03 全体の流れ・練習用XML</a></li><li><a href="#launch">04 アプリを起動する</a></li><li><a href="#load">05 XMLを読み込む</a></li><li><a href="#tree">06 構造・検索を確認する</a></li><li><a href="#graph">07 グラフで見る</a></li><li><a href="#compare">08 2つのXMLを比較する</a></li><li><a href="#export">09 Excelへ出力する</a></li><li><a href="#save">10 設定と作業を保存・終了する</a></li><li><a href="#verification">11 完了確認</a></li><li><a href="#troubleshooting">12 困ったとき</a></li>
     </ol></nav>
@@ -23,7 +23,7 @@
   </aside>
   <div id="sidebar-overlay" class="sidebar-overlay" aria-hidden="true"></div>
   <main id="main-content" class="main-content">
-    <header class="hero"><div class="hero-content"><p class="eyebrow">User Guide · Python 3.14.6 Bundled</p><h1>Enterprise XML Analyzer<br><span>Windows版 操作手順書</span></h1><p class="hero-lead">ZIPを展開したところから、XMLの確認・比較・Excel保存まで。画面と同じ練習用データを使って、一通りの操作を試せます。</p><div class="hero-badges"><span>対象: Windows x64配布版</span><span>Pythonの追加インストール不要</span><span>更新: 2026/10/28</span></div></div></header>
+    <header class="hero"><div class="hero-content"><p class="eyebrow">User Guide · Python 3.14.6 Bundled</p><h1>Enterprise XML Analyzer<br><span>Windows版 操作手順書</span></h1><p class="hero-lead">ZIPを展開したところから、XMLの確認・比較・Excel保存まで。画面と同じ練習用データを使って、一通りの操作を試せます。</p><div class="hero-badges"><span>対象: Windows x64配布版</span><span>Pythonの追加インストール不要</span><span>更新: 2026/10/29</span></div></div></header>
 
     <section id="overview" class="content-section"><div class="section-heading"><span class="section-number">01</span><div><p class="section-kicker">Overview</p><h2>目的と対象</h2></div></div>
       <p>このアプリは、XMLファイルの中身を階層やグラフで確認し、2つのXMLの違いを調べ、必要な項目をExcel・CSVへ取り出すためのデスクトップアプリです。XML原本を直接編集する機能はありません。</p>
@@ -89,6 +89,8 @@
 
     <section id="export" class="content-section"><div class="section-heading"><span class="section-number">09</span><div><p class="section-kicker">Excel Export</p><h2>すべての要素をExcelへ出力する</h2></div></div>
       <h3 id="simple-export">簡単出力：外側のノードを1行にする</h3>
+      <p>v2.5では、プレビュー時に「保存前チェック」も表示します。「作成シート」で全シートの行数・列数、「1行の単位」で実際の要素パスと件数、「ヘッダーの適用範囲」でXML別の適用先を確認してください。未確認の状態や設定変更後に保存を押した場合は先にこの結果を表示します。内容を見てから、もう一度「全要素をExcel保存」を押して保存先を選びます。</p>
+      <p class="small-note">シートの行数は見出し行を除きます。列・行のシート分割と、長い値・表示項目の継続行も反映します。横持ちの項目数には元ファイル・ID等3列を含まず、各シートの列数には含みます。縦持ちの中身は11列です。値のプレビューは先頭だけですが、保存前チェックの件数は全件から集計します。</p>
       <ol class="numbered-steps"><li><div><strong>XMLを読み込み、「Excel出力」を開きます。</strong><p>最上部の「簡単出力モード（すべての要素・属性）」を使います。読み込み済みの全XMLが対象です。詳細出力の列・条件・XML選択では絞りません。</p></div></li><li><div><strong>「表の形式」で「横持ち」または「縦持ち」を選びます。</strong><p>横持ちでは、文書ルート直下の最も外側にあるデータ要素が1行です。指定したヘッダー範囲は除外します。縦持ちはノード・項目名・値を行で並べる一覧です。</p></div></li><li><div><strong>必要なら、下の手順でヘッダー範囲を指定します。</strong><p>ヘッダーはロット情報・測定条件などのXML内の情報です。指定要素と配下全体をヘッダー専用シートへ分離し、IDでデータと対応づけます。指定しなければ、各外側要素をデータとして出力します。</p></div></li><li><div><strong>「全要素プレビュー」で確認し、「全要素をExcel保存」を押します。</strong><p>「表示する内容」で中身・ヘッダー情報・紐づけ・共通データを切り替えられます。表示は先頭20行・30列・各80文字までですが、保存は全件です。画面下部の完了表示を確認し、保存先のExcelを開きます。</p></div></li></ol>
       <div class="table-wrap"><table><caption>横持ちの1行の単位</caption><thead><tr><th>XMLの形</th><th>1行になる範囲</th></tr></thead><tbody><tr><td><code>root → record、record</code></td><td>recordごとに計2行。配下の項目が列になります。</td></tr><tr><td><code>root → header、record、record</code> でheaderをヘッダー指定</td><td>recordごとに計2行。headerは専用シートへ分離します。</td></tr><tr><td><code>root → data → record、record</code></td><td>最も外側のdataで1行。内側のrecordは番号付きの列に展開します。</td></tr><tr><td>子要素を持たないroot</td><td>root自身で1行。</td></tr></tbody></table></div>
       <p>商品練習用XML2ファイルは、ヘッダー指定なしで横持ち6行・5項目（元ファイル等の列を除く）、縦持ち30行です。文書ルートの直接テキスト2件は共通データに保存し、全26要素・6属性を保持します。</p>
@@ -97,10 +99,16 @@
       <h3 id="header-export">ヘッダー範囲を指定し、データと紐づける</h3>
       <p>次の練習XMLは共通ヘッダー1件と、データA・Bそれぞれのヘッダーを持ちます。商品練習から切り替える場合は、必要な作業を保存したうえで、「設定」→「すべての作業データと設定を削除」で読み込み済みXMLを消し、このXMLを1つだけ読み込んでください。</p>
       <div class="download-row"><a class="download-link" href="samples/sample-with-headers.xml" download="sample-with-headers.xml">ヘッダー付き練習XMLを保存</a></div>
-      <ol class="numbered-steps"><li><div><strong>「ヘッダー範囲」へ、次の2行を入力します。</strong><p>1行につき1つの要素パスです。指定した要素とその配下全体を対象にします。構造ビューで対象を選んでから「構造ビューの選択要素を追加」でも入力できます。複数の範囲を指定でき、重なる範囲は外側にまとめます。</p></div></li></ol>
+      <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="構造ツリーのヘッダーチェックを拡大"><img src="images/20-header-tree.png" alt="構造ツリーのヘッダー欄で共通headerとrecord内headerをチェックし、指定要素は青、配下は薄い青と配下の文字で区別した画面。" width="984" height="688" loading="lazy"></button><figcaption>ツリーで選択｜チェックは同じ要素パスの全出現に適用します。右側の「ヘッダーの適用範囲を確認」で出力画面へ戻れます。</figcaption></figure>
+      <ol class="numbered-steps"><li><div><strong>「構造ツリーでヘッダーを選択」を押し、headerのチェック欄をクリックします。</strong><p>共通の <code>/root/header</code> と、record内の <code>/root/record/header</code> をチェックします。要素を選んでSpace、または右側のチェックボックスでも切り替えられます。同じ要素パスの全出現に適用するため、record内のheaderを1つ選ぶと、データA・Bの両方が対象になります。指定要素は青、配下は薄い青と「配下」の文字で表示されます。後から展開した要素にも反映します。</p><p>「ヘッダーの適用範囲を確認」で出力画面へ戻ります。パスを入力する場合は、従来どおり次の2行を「ヘッダー範囲」に指定できます。複数の範囲が重なった場合は外側にまとめます。親の指定に含まれる子だけを除外することはできないため、範囲を外す場合は親のチェックを解除します。</p></div></li></ol>
       <div class="code-block"><pre><code>/root/header
 /root/record/header</code></pre></div>
       <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="ヘッダー範囲の指定画面を拡大"><img src="images/15-header-ranges.png" alt="ヘッダー範囲にroot/headerとroot/record/headerの2行を指定した画面。設定の保存と読込もできる。" width="984" height="688" loading="lazy"></button><figcaption>ヘッダー範囲｜要素パスを指定します。名前空間付きXMLでは構造ビューの選択要素から追加すると、正しいパスを入力できます。</figcaption></figure>
+      <div class="table-wrap"><table><caption>保存前チェックの切替欄で確認する内容</caption><thead><tr><th>表示</th><th>この練習での確認</th></tr></thead><tbody><tr><td>作成シート</td><td>横持ちは9シート、縦持ちは8シート。中身・ヘッダー・紐づけ・共通データ等の各行数と列数を確認します。</td></tr><tr><td>1行の単位</td><td><code>/root/record</code> が2件。横持ちでは2行となり、縦持ちでは同じ基準でデータIDを付け、配下の値を8行へ展開します。</td></tr><tr><td>ヘッダーの適用範囲</td><td>共通headerは該当1件・適用データ2件、record内headerは該当2件・適用データ2件です。対応数はそれぞれ2行、合計4行です。</td></tr></tbody></table></div>
+      <p>「該当件数」は定義したパスに一致する要素数、「分離ヘッダー件数」は重複範囲を統合したあとの件数です。同じデータに複数ヘッダーが属すると、適用データ件数より対応数が多くなります。「親範囲に統合」は二重保存を防いだ指定、「該当なし」はそのXMLには対象がない指定です。全XMLで見つからない範囲がある場合は、エラーを確認して指定を修正してください。</p>
+      <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="保存前チェックのシート一覧を拡大"><img src="images/21-save-overview.png" alt="保存前チェックでデータ2件、中身2行、項目4列とID等3列、作成9シートを表示し、シートごとの行数と列数を並べた画面。" width="984" height="688" loading="lazy"></button><figcaption>作成シート｜保存前に全シートの名前・データ行数・列数を確認できます。表の縦スクロールで残りのシートも表示します。</figcaption></figure>
+      <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="保存前チェックの1行の単位を拡大"><img src="images/23-record-unit.png" alt="1行の単位の一覧に元XML、root/recordの基準パス、データ件数2件を表示した画面。" width="984" height="688" loading="lazy"></button><figcaption>1行の単位｜実際の要素パスと件数を確認します。横持ちではrecord1件が1行です。</figcaption></figure>
+      <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="XMLごとのヘッダー適用範囲を拡大"><img src="images/22-header-coverage.png" alt="共通headerは該当1件、record内headerは該当2件で、それぞれ適用データ2件と対応数2を表示した画面。" width="984" height="688" loading="lazy"></button><figcaption>ヘッダーの適用範囲｜XMLごとの該当・分離件数、共通／ノード内の適用範囲、適用データ件数と対応数を確認します。</figcaption></figure>
       <ol class="numbered-steps" start="2"><li><div><strong>表の形式を選び、「全要素プレビュー」を押します。</strong><p>このXMLはデータ2件、ヘッダー3件です。横持ちは2行・4項目、縦持ちは8行です。ヘッダーは両形式とも7項目行の縦持ち一覧として専用シートに保存します。</p></div></li><li><div><strong>「表示する内容」を切り替えて確認します。</strong><p>「ヘッダー情報」でロットLOT-001や単位Cを確認し、「紐づけ」で4行の対応を確認します。画面のIDは短縮表示ですが、Excelには完全なIDを保存します。</p></div></li><li><div><strong>「全要素をExcel保存」で保存します。</strong><p>「中身のデータ」「ヘッダー」「紐づけ」などのシートを確認します。「簡単出力設定を保存」で形式と範囲をJSONへ保存でき、次回は「簡単出力設定を読込」で再利用できます。設定JSONにXMLの値は含みません。</p></div></li></ol>
       <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="ヘッダーを分離した横持ちデータを拡大"><img src="images/16-header-wide.png" alt="ヘッダーを除いた横持ちのrecord2件。ID、温度、圧力などの4項目を列に展開する。" width="984" height="688" loading="lazy"></button><figcaption>中身のデータ・横持ち｜データAとBの2行に、温度20／25、圧力5／6などを保存します。</figcaption></figure>
       <figure class="screenshot"><button class="shot-zoom" type="button" aria-label="ヘッダーを分離した縦持ちデータを拡大"><img src="images/19-header-long.png" alt="ヘッダーを除いた縦持ちデータのプレビュー。record2件の値を8行にする。" width="984" height="688" loading="lazy"></button><figcaption>中身のデータ・縦持ち｜同じデータIDで、ノード内の項目をまとめて扱えます。</figcaption></figure>
@@ -157,13 +165,14 @@
         <details><summary>ヘッダー範囲が見つからない／HEADER_PATH・HEADER_NOT_FOUND</summary><div><p>要素の絶対パスを1行ずつ指定します。例は <code>/root/header</code> です。<code>[1]</code>、属性、ワイルドカードは指定しません。名前空間付きXMLは構造ビューで要素を選び「構造ビューの選択要素を追加」を使ってください。範囲を変えたら再プレビューします。</p></div></details>
         <details><summary>列を編集したのに結果へ反映されない</summary><div><p>表の該当行を選んで編集し、「列へ反映」を押してから再度プレビューします。プレビューを実行する前の表示は自動更新されません。</p></div></details>
         <details><summary>「XLSX保存」など下のボタンが見えない</summary><div><p>各画面の右端の縦スクロールで下へ移動します。詳細出力の中には別の縦横スクロールもあります。画面幅が狭い場合は上部の「画面」で切り替えます。</p></div></details>
+        <details><summary>「全要素をExcel保存」を押しても保存先の画面が出ない</summary><div><p>初回や設定変更後は、先に保存前チェックを作成します。画面に表示された1行の単位・件数・作成シート・ヘッダーの適用先を確認して、もう一度「全要素をExcel保存」を押してください。処理中の場合は完了を待ちます。エラーが出た場合は、ヘッダー範囲の入力内容を確認してください。</p></div></details>
         <details><summary>保存できない／disk I/O error／処理が遅い</summary><div><p>空き容量、保存先への書き込み権限、出力ファイルをExcelで開いたままにしていないかを確認します。大きなXMLは一時作業領域も使用します。共有フォルダで失敗する場合は、許可されたローカルフォルダへの保存を試し、会社の担当者へ権限を確認してください。</p></div></details>
         <details><summary>全データ削除・終了に時間がかかる</summary><div><p>大量データではSQLiteの整理に時間がかかります。中断・終了操作を連打せず待ってください。100万要素後の削除で約1分かかった検証例があります。</p></div></details>
       </div>
       <div class="callout info"><div class="callout-icon" aria-hidden="true">i</div><div><h3>解決しない場合</h3><p>配布担当者へ、Windowsの種類、アプリの版、対象ファイル名、操作、表示メッセージを伝えてください。「設定」→「技術ログをJSON保存」も利用できます。XMLの実データや作業ファイルを送る場合は、送付先と内容を会社のルールに従って確認してください。</p></div></div>
       <p class="small-note">配布担当者向け: <a href="https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions">GitHubのビルド一覧</a>はアクセス権を持つ利用者のみ閲覧できます。Actionsの配布物は保存期限があるため、期限切れの場合は担当者へ再配布を依頼してください。</p>
     </section>
-    <footer class="page-footer"><p>Enterprise XML Analyzer · Windows版ユーザー手順書 · v2.4</p><p>更新: 2026/10/28 · 画面は架空の練習用データを使用</p></footer>
+    <footer class="page-footer"><p>Enterprise XML Analyzer · Windows版ユーザー手順書 · v2.5</p><p>更新: 2026/10/29 · 画面は架空の練習用データを使用</p></footer>
   </main>
   <button id="back-to-top" class="back-to-top" type="button" aria-label="ページ上部へ戻る"><span aria-hidden="true">↑</span> トップへ戻る</button>
   <dialog id="image-viewer" aria-labelledby="image-viewer-title"><div class="viewer-bar"><p id="image-viewer-title">画面の拡大表示</p><button id="close-viewer" type="button">閉じる（Esc）</button></div><img id="viewer-image" alt=""><p class="viewer-note">横幅が足りない場合は画像の下の横スクロールで確認できます。</p></dialog>
