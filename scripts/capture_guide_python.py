@@ -151,7 +151,19 @@ def main():
         wait()
         app.import_files([str(SAMPLES / 'sample-with-headers.xml')])
         wait()
-        app.header_paths.insert('1.0', '/root/header\n/root/record/header')
+        file = app.files[0]['id']
+        for path in ('/root/header', '/root/record/header'):
+            app.jump_to_node(next(app.store.nodes(file, path=path)))
+            app.toggle_tree_header()
+        assert app.selected_header_paths() == ('/root/header', '/root/record/header')
+        common = next(app.store.nodes(file, path='/root/header'))
+        app.tree.item(f'n{common["id"]}', open=True)
+        app.expand_tree(f'n{common["id"]}')
+        records = list(app.store.nodes(file, path='/root/record'))
+        for record in records:
+            app.tree.item(f'n{record["id"]}', open=True)
+            app.expand_tree(f'n{record["id"]}')
+        capture('20-header-tree', '構造ビュー')
         root.update()
         app.tabs.select(app.pages['Excel出力'])
         app.pages['Excel出力'].canvas.yview_moveto(0)
@@ -163,6 +175,12 @@ def main():
             app.preview_all_table()
             wait()
             assert app.last_result['data_records'] == 2 and app.last_result['header_groups'] == 3
+            if orientation == '横持ち':
+                for view, screenshot in (('作成シート', '21-save-overview'), ('ヘッダーの適用範囲', '22-header-coverage'), ('1行の単位', '23-record-unit')):
+                    app.output_view.set(view)
+                    app.show_output_overview()
+                    app.pages['Excel出力'].reveal(app.output_summary)
+                    capture(screenshot, 'Excel出力')
             app.pages['Excel出力'].reveal(app.table_preview)
             capture(name, 'Excel出力')
         for view, name in (('ヘッダー情報', '17-header-info'), ('紐づけ', '18-header-links')):
@@ -182,6 +200,7 @@ def main():
             "sample_rows": 3, "all_element_rows": 26, "ml_records": 6, "ml_features": 4,
             "table_elements": 26, "table_values": 32, "table_wide_rows": 6, "table_wide_columns": 5, "table_long_rows": 30,
             "header_sample_records": 2, "header_sample_groups": 3, "header_sample_values": 17, "header_sample_links": 4,
+            "preflight_sheets_wide": 9, "tree_header_paths": ['/root/header', '/root/record/header'],
             "resize": "800x600", "comparison_counts": counts,
             "note": "Unedited real Tk application captures; synthetic samples only. Save chooser substituted, actual XLSX writer executed."
         }, ensure_ascii=False, indent=2), encoding="utf-8")
