@@ -120,6 +120,7 @@ class Application:
         self.graph.pack(fill="both", expand=True)
         self._compare_page()
         self._export_page()
+        self.update_header_selection()
         self.statistics = tk.Text(self.contents["統計"], height=12, wrap="word", font=("Yu Gothic UI", 11))
         self.statistics.pack(fill="both", expand=True)
         self._settings_page()
@@ -167,7 +168,7 @@ class Application:
         self.title_label.configure(font=("Yu Gothic UI", 15 if compact else 19, "bold"))
         def wrap(widget):
             for child in widget.winfo_children():
-                if isinstance(child, ttk.Label) and int(child.cget("wraplength") or 0) > 0:
+                if isinstance(child, ttk.Label) and child is not getattr(self, 'header_selection_hint', None) and int(child.cget("wraplength") or 0) > 0:
                     child.configure(wraplength=max(200, width - 80))
                 if isinstance(child, FlowFrame):
                     child.schedule()
@@ -1195,15 +1196,17 @@ class Application:
             headers = ['元ファイル', '横持ち1行／縦持ちデータIDの基準パス', 'データ件数']
             rows = [(files[row['file']], row['path'], f'{row["records"]:,}') for row in result['units']]
         else:
-            headers = ['元ファイル', 'ヘッダー範囲', '該当件数', '分離ヘッダー件数', '適用範囲', '適用データ件数', '対応数（データ×ヘッダー）']
+            headers = ['元ファイル', 'ヘッダー範囲', '該当件数', '分離件数', '適用範囲', '適用データ件数', '対応数']
             rows = [(files[row['file']], row['path'], row['matches'], row['groups'], row['scope'], row['data_records'], row['links'])
                     for row in result['header_coverage']]
         clear_tree(self.output_overview)
         columns = tuple(f'c{i}' for i in range(len(headers)))
         self.output_overview.configure(columns=columns, displaycolumns=columns)
+        widths = {'元ファイル': 170, 'ヘッダー範囲': 210, '該当件数': 80, '分離件数': 80,
+                  '適用範囲': 90, '適用データ件数': 120, '対応数': 80}
         for column, name in zip(columns, headers):
             self.output_overview.heading(column, text=name)
-            self.output_overview.column(column, width=260 if 'パス' in name or name == 'ヘッダー範囲' else 180, minwidth=80, stretch=False)
+            self.output_overview.column(column, width=widths.get(name, 360 if 'パス' in name else 180), minwidth=80, stretch=False)
         for row in rows:
             self.output_overview.insert('', 'end', values=[display(value)[:OVERVIEW_TEXT_CHARS] for value in row])
         unit = '文書ルート直下のデータ要素1件＝1行（子要素がなければルート）' if result['orientation'] == WIDE else '要素の直接テキスト・属性値＝1行（長い値・表示項目は分割）'
