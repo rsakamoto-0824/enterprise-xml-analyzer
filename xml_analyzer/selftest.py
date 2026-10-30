@@ -19,6 +19,43 @@ from .writers import write_xlsx
 from .visualization import save_windows_canvas_png
 
 
+def post_windows_drop(root, paths):
+    """Send a real HDROP through the Windows message queue, as Explorer does."""
+    import ctypes
+    from ctypes import wintypes
+    import struct
+
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+    user = ctypes.WinDLL('user32', use_last_error=True)
+    kernel.GlobalAlloc.argtypes = [wintypes.UINT, ctypes.c_size_t]
+    kernel.GlobalAlloc.restype = wintypes.HGLOBAL
+    kernel.GlobalLock.argtypes = [wintypes.HGLOBAL]
+    kernel.GlobalLock.restype = ctypes.c_void_p
+    kernel.GlobalUnlock.argtypes = [wintypes.HGLOBAL]
+    kernel.GlobalFree.argtypes = [wintypes.HGLOBAL]
+    kernel.GlobalFree.restype = wintypes.HGLOBAL
+    user.GetAncestor.argtypes = [wintypes.HWND, wintypes.UINT]
+    user.GetAncestor.restype = wintypes.HWND
+    user.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+    user.PostMessageW.restype = wintypes.BOOL
+    encoded = ('\0'.join(str(path) for path in paths) + '\0\0').encode('utf-16-le')
+    payload = struct.pack('<IiiII', 20, 0, 0, 0, 1) + encoded
+    handle = kernel.GlobalAlloc(0x0042, len(payload))
+    if not handle:
+        raise ctypes.WinError(ctypes.get_last_error())
+    try:
+        address = kernel.GlobalLock(handle)
+        if not address:
+            raise ctypes.WinError(ctypes.get_last_error())
+        ctypes.memmove(address, payload, len(payload))
+        kernel.GlobalUnlock(handle)
+        if not user.PostMessageW(user.GetAncestor(root.winfo_id(), 2), 0x0233, handle, 0):
+            raise ctypes.WinError(ctypes.get_last_error())
+    except BaseException:
+        kernel.GlobalFree(handle)
+        raise
+
+
 def self_test(screenshot_dir=None):
     # Deny network access in the frozen smoke test as well as in source tests.
     original_connect = socket.socket.connect

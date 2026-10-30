@@ -1,7 +1,7 @@
 name: Python 3.14.6 Windows standalone
 on:
   push:
-    branches: [main, 'feat/python-standalone-3146', 'feat/python-simple-export', 'feat/export-preview-headers']
+    branches: [main, 'feat/python-standalone-3146', 'feat/python-simple-export', 'feat/export-preview-headers', 'fix/windows-file-drop']
     paths: ['xml_analyzer/**', 'tests_python/**', '*.py', '*.cmd', 'scripts/*python.py', 'docs/python-user-guide/**', 'docs/python-*.md', 'docs/validation/python-*.json', 'pyproject.toml', '.python-version', 'requirements-build-windows.txt', '.github/workflows/python-windows.yml']
   workflow_dispatch:
 permissions:
