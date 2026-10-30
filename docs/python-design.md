@@ -98,3 +98,15 @@ GUIは中身のデータ・ヘッダー情報・紐づけ・共通データの�
 保存時は形式・ヘッダー範囲・読み込みファイルIDが確認結果と一致することを検査します。未確認ならまず結果を画面へ表示し、利用者が内容を確認して再度保存操作を行います。保存そのものは既存エンジンで再生成し、既存ファイルの原子的な置換を維持します。作業読込・ファイル変更・形式変更・範囲変更で確認結果を無効にします。
 
 ツリーはヘッダー専用のチェック列を持ち、マウスとSpaceで操作できます。手入力・JSON読込と同じ範囲定義を使用し、選択要素と配下を文字と背景色で区別します。同一パスの全出現が対象で、位置指定へは変更しません。表示済みノードの情報だけを使って色を更新し、展開時や検索ジャンプで追加したノードにも適用します。処理中はチェックを含む編集を禁止します。XML値を含む設定項目や実行時依存は追加しません。
+
+## Windowsドロップの異常終了修正（v2.5.1）
+
+従来のWM_DROPFILES処理は、ctypesで呼ばれるWindowsコールバック内からroot.after_idleを呼んでいました。Windows通知の途中でTcl/Tkへ再入すると、_tkinterのスレッド状態が壊れ、通常のPython例外処理では防げない異常終了が発生します。直接SendMessageWを呼ぶ従来テストでは成功していましたが、PostMessageWで通知をキューへ送り、Tkのmainloopで処理する再現テストではPython 3.14.6でも致命的エラーになりました。
+
+受信処理はWindows APIによるUnicodeパス取得、HDROPの解放、SimpleQueueへの格納だけに限定します。afterやafter_idleを含むTcl/Tk呼び出し、XML読込、画面更新は一切呼びません。あらかじめTk側に登録した50ms間隔のタイマーがキューを受け取り、通常の画面処理として読み込みを開始します。受信・読込コールバックの例外はTk側で報告し、Cコールバックの境界へPython例外を漏らしません。処理中・終了中の追加読込も先に拒否し、SQLiteへ問い合わせません。
+
+ウインドウ処理の単純な差し替えをやめ、Windows標準のSetWindowSubclass／DefSubclassProc／RemoveWindowSubclassを使用します。HWND、WPARAM、LPARAM、サブクラスIDは64bitに対応した型を指定します。登録中のコールバックをrootから保持し、終了時はタイマーを解除して自分の登録だけを外します。他の登録を保持し、二重解除・保留中の通知・WM_NCDESTROYにも対応します。これらはWindows標準DLLであり、実行時pip依存は追加しません。
+
+配布EXEの自己検証も、ファイル選択と同じ関数の直接呼出しから、実際のHDROPをPostMessageWで送り、Tkのmainloopで日本語名の2ファイルを読み込む方式へ変更します。ビルドはこの検証が成功しなければ配布ZIPを生成しません。OSの通知境界を検証するものであり、Explorerをマウスで操作する試験や会社PCでの受入試験を代替するものではありません。
+
+APIの契約はMicrosoftの[SetWindowSubclass](https://learn.microsoft.com/en-us/windows/win32/api/commctrl/nf-commctrl-setwindowsubclass)、[DefSubclassProc](https://learn.microsoft.com/en-us/windows/win32/api/commctrl/nf-commctrl-defsubclassproc)、コールバック寿命はPythonの[ctypes](https://docs.python.org/3.14/library/ctypes.html#callback-functions)を参照します。

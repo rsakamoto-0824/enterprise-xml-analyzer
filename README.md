@@ -6,6 +6,8 @@ Windowsの実行環境の違いに対応するため、主なアプリをPython 
 
 ## Windowsで起動
 
+**v2.5.1では、ドラッグ＆ドロップ直後にアプリが終了する不具合を修正しました。** 修正版ZIPは旧版とは別のフォルダへすべて展開して、EXEを起動してください。Windowsの通知処理ではファイル名の受け取りだけを行い、画面と読み込みの処理は通常のイベント処理へ渡します。
+
 Windows x64用の `enterprise-xml-analyzer-windows-x64-python3146.zip` をすべて展開し、`EnterpriseXmlAnalyzer/EnterpriseXmlAnalyzer.exe` を起動します。`_internal` フォルダを削除・移動しないでください。
 
 ソース版は、CPython **3.14.6完全版（Tcl/Tk付き）** で起動します。別のバージョンでは起動を止めます。
