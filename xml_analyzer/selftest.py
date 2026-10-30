@@ -19,6 +19,43 @@ from .writers import write_xlsx
 from .visualization import save_windows_canvas_png
 
 
+def post_windows_drop(root, paths):
+    """Send a real HDROP through the Windows message queue, as Explorer does."""
+    import ctypes
+    from ctypes import wintypes
+    import struct
+
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+    user = ctypes.WinDLL('user32', use_last_error=True)
+    kernel.GlobalAlloc.argtypes = [wintypes.UINT, ctypes.c_size_t]
+    kernel.GlobalAlloc.restype = wintypes.HGLOBAL
+    kernel.GlobalLock.argtypes = [wintypes.HGLOBAL]
+    kernel.GlobalLock.restype = ctypes.c_void_p
+    kernel.GlobalUnlock.argtypes = [wintypes.HGLOBAL]
+    kernel.GlobalFree.argtypes = [wintypes.HGLOBAL]
+    kernel.GlobalFree.restype = wintypes.HGLOBAL
+    user.GetAncestor.argtypes = [wintypes.HWND, wintypes.UINT]
+    user.GetAncestor.restype = wintypes.HWND
+    user.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+    user.PostMessageW.restype = wintypes.BOOL
+    encoded = ('\0'.join(str(path) for path in paths) + '\0\0').encode('utf-16-le')
+    payload = struct.pack('<IiiII', 20, 0, 0, 0, 1) + encoded
+    handle = kernel.GlobalAlloc(0x0042, len(payload))
+    if not handle:
+        raise ctypes.WinError(ctypes.get_last_error())
+    try:
+        address = kernel.GlobalLock(handle)
+        if not address:
+            raise ctypes.WinError(ctypes.get_last_error())
+        ctypes.memmove(address, payload, len(payload))
+        kernel.GlobalUnlock(handle)
+        if not user.PostMessageW(user.GetAncestor(root.winfo_id(), 2), 0x0233, handle, 0):
+            raise ctypes.WinError(ctypes.get_last_error())
+    except BaseException:
+        kernel.GlobalFree(handle)
+        raise
+
+
 def self_test(screenshot_dir=None):
     # Deny network access in the frozen smoke test as well as in source tests.
     original_connect = socket.socket.connect
@@ -36,7 +73,20 @@ def self_test(screenshot_dir=None):
             a, b = base / "日本語 A.xml", base / "日本語 B.xml"
             a.write_text('<r><n id="001"><v>りんご</v></n><n id="002"><v>=1+1</v></n></r>', encoding="utf-8")
             b.write_text('<r><n id="001"><v>みかん</v></n><n id="002"><v>=1+1</v></n></r>', encoding="utf-8")
-            app.import_files([str(a), str(b)])
+            if sys.platform == 'win32':
+                root.deiconify()
+                root.update_idletasks()
+                drop_deadline = time.monotonic() + 30
+                def check_drop():
+                    if (not app.task and len(app.files) == 2) or time.monotonic() > drop_deadline:
+                        root.quit()
+                    else:
+                        root.after(20, check_drop)
+                root.after(0, lambda: post_windows_drop(root, [a, b]))
+                root.after(20, check_drop)
+                root.mainloop()
+            else:
+                app.import_files([str(a), str(b)])
             deadline = time.monotonic() + 30
             while app.task:
                 root.update()
@@ -156,6 +206,8 @@ def self_test(screenshot_dir=None):
                     "ml_records": 4, "ml_features": 2, "ml_sheets": 4, "minimum_window": "640x480",
                     "table_elements": 10, "table_values": 14, "table_wide_rows": 4, "table_wide_columns": 2, "table_long_rows": 8, "table_header_groups": 4, "table_header_values": 4,
                     "gui": "Tk application, background import, tree and canvas", "network": "blocked", "screenshots": screenshots}
+            info['native_drop_files'] = 2 if sys.platform == 'win32' else 0
+            info['native_drop_dispatch'] = 'PostMessageW + Tk mainloop' if sys.platform == 'win32' else 'not applicable'
             app.finish_close()
             app, root = None, None
             return info

@@ -76,6 +76,8 @@ def main():
     result = json.loads(report_path.read_text(encoding="utf-8"))
     if result.get("status") != "PASS" or result.get("python") != "3.14.6" or not result.get("frozen"):
         raise SystemExit("Frozen runtime verification failed.")
+    if result.get('native_drop_files') != 2:
+        raise SystemExit('Frozen Windows file drop verification failed.')
     manifest = {"app": "enterprise-xml-analyzer-python", "version": VERSION, "python": "3.14.6",
                 "platform": platform.platform(), "pyinstaller": "6.22.3", "files": [], "source_sha256": {}}
     for source in sorted((ROOT / "xml_analyzer").glob("*.py")) + [ROOT / "run.py"]:

@@ -318,6 +318,11 @@ class Application:
             self.import_files(paths)
 
     def import_files(self, paths):
+        if self.closing:
+            return
+        if self.task:
+            self.status.set('処理中です。完了または中断後に操作してください。')
+            return
         if len(paths) > 16 or len(paths) + len(self.store.files()) > 16:
             self.report(AppError("QUEUE_LIMIT: 作業中のXMLは合計16ファイルまでです。"))
             return

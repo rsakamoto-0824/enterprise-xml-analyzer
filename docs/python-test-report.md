@@ -1,6 +1,6 @@
 # Python版の検証記録
 
-更新日: 2026年10月27日。v2.0の性能値は2026年10月25日の記録です。旧Web版の件数・性能値は流用していません。
+更新日: 2026年10月30日。v2.0の性能値は2026年10月25日の記録です。旧Web版の件数・性能値は流用していません。
 
 ## 機能・画面・Windows配布
 
@@ -165,3 +165,16 @@ Macで2万データ・20001ヘッダー・40000対応の保存前チェックを
 [Windowsの全検証（ae43d3d）](https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions/runs/40834833995)で73件すべて、同梱EXEの通信禁止自己検証、1/10/100/500MiB・1001001要素・10万件学習表・2万件のヘッダー付き出力が成功しました。2万データ・20001ヘッダーの保存は横持ち5.553秒、縦持ち7.278秒でした。保存前チェックの時間とは別です。記録は `validation/python-preview-windows-performance.json` と `validation/python-preview-windows-selftest.json` です。[列幅を調整したWindows版（e971bb0）](https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions/runs/40836106370)でも全件と同梱EXEが成功しました。会社の実機とMicrosoft Excel本体での未検証範囲は上記のとおりです。
 
 [Windows実画面23枚（3c094e9）](https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions/runs/40851136477)を手順書へ反映しました。PC幅1440／1280のChromiumで23画像・目次12箇所・全リンク先・横方向のはみ出しがないこと、新しいツリー画面の拡大とEsc、練習XMLの保存と原本一致を確認しました。HTML単体版は全23画像・3つの練習XMLを埋め込み、外部CSS／JavaScriptを参照しないこと、画像の表示・拡大・練習XMLの保存を確認しました。
+
+
+## v2.5.1 Windowsドロップ時の異常終了
+
+2026年10月30日追加。[修正前の再現試験（789d719）](https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions/runs/41047934056)では、実際のHDROPをPostMessageWで送り、Tkのmainloopで受信した時点でプロセスが異常終了しました。終了コードは3221225477、致命的エラーはPyEval_RestoreThreadでした。従来のSendMessageWを直接呼ぶ試験だけでは検出できていませんでした。
+
+[修正後のWindows検証（934c85a）](https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions/runs/41048620225)では、Windows Server 2022 x64 / CPython 3.14.6で79件すべてが成功しました。ドロップ通知内からTcl/Tkを呼ばず、通常のTkタイマーから読み込む方式に変更しています。再現試験は別プロセスで実行し、日本語・絵文字・空白・波括弧を含むパス、単一／複数／繰り返し、リサイズ、再表示、不正XML、17ファイルの拒否後の再読込を確認しました。通知内でTkや読込処理を呼ばないこと、例外・二重解除・他の登録の保持・終了時の通知も検証しています。
+
+同梱EXEの自己検証も、TkのmainloopとPostMessageWによるドロップ経由で2ファイルを読み込む方式へ変更しました。日本語・空白フォルダ、PATHをSystem32だけにした状態、無効なPYTHONHOME/PYTHONPATH、通常のTCP接続を禁止した条件で成功しています。ビルド時にドロップ経由の読込件数を必須確認し、失敗した場合は配布ZIPを作成しません。比較・全要素出力・学習表などの既存自己検証も維持しています。
+
+Mac / CPython 3.14.6 / Tk 9.0.4では79件中77件成功、Windows専用の2件をスキップし、通信禁止の自己検証も成功しました。処理エンジンとExcel出力形式は変更していないため、大容量性能試験とExcelの再描画試験は今回繰り返していません。記録は `validation/python-drop-validation.json` です。
+
+ここで確認したのはWindowsのドロップ通知からアプリへ渡る経路です。人がExplorerからドラッグする実操作と、会社のWindows 11 / Windows Server 2019実機での受入確認は未実施です。修正版は旧版とは別のフォルダへZIPをすべて展開し、タイトルバーがv2.5.1であることを確認して使用してください。

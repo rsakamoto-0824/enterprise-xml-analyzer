@@ -1,0 +1,51 @@
+{
+  "date": "2026-10-30",
+  "version": "2.5.1",
+  "python": "3.14.6",
+  "baseline": {
+    "commit": "789d719",
+    "run_url": "https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions/runs/41047934056",
+    "status": "EXPECTED_FAILURE",
+    "tests": 74,
+    "failed": 1,
+    "process_exit_code": 3221225477,
+    "fatal_error": "PyEval_RestoreThread",
+    "dispatch": "PostMessageW + Tk mainloop"
+  },
+  "fixed_windows": {
+    "commit": "934c85af82b5a5fcd64643b4b38943c5741626b8",
+    "run_url": "https://github.com/rsakamoto-0824/enterprise-xml-analyzer/actions/runs/41048620225",
+    "status": "PASS",
+    "environment": "Windows Server 2022 x64",
+    "tests": 79,
+    "passed": 79,
+    "skipped": 0,
+    "frozen_selftest": "PASS",
+    "native_drop_files": 2,
+    "native_drop_dispatch": "PostMessageW + Tk mainloop"
+  },
+  "macos": {
+    "status": "PASS",
+    "tests": 79,
+    "passed": 77,
+    "skipped_windows_only": 2,
+    "selftest": "PASS"
+  },
+  "synthetic_inputs_only": true,
+  "cases": [
+    "single and multiple files",
+    "repeated drops",
+    "Japanese, emoji, spaces and braces in paths",
+    "resize and redisplay",
+    "malformed XML recovery",
+    "17-file limit and recovery",
+    "callback lifetime and teardown",
+    "no Tcl/Tk calls inside native callback",
+    "busy import refusal"
+  ],
+  "not_verified": [
+    "physical Explorer mouse gesture",
+    "company Windows 11 and Windows Server 2019 acceptance"
+  ],
+  "unchanged_processing_engine": true
+}

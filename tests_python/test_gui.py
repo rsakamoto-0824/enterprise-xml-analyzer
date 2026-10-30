@@ -169,6 +169,9 @@ class GuiTests(unittest.TestCase):
         path.write_text("<r>" + "<n/>" * 100000 + "</r>")
         self.app.import_files([str(path)])
         self.assertIn("disabled", self.app.file_picker.state())
+        with patch.object(self.app.store, 'files', side_effect=AssertionError('busy drop must not read SQLite')):
+            self.app.import_files([str(path)])
+        self.assertIn('処理中', self.app.status.get())
         self.app.cancel()
         self.wait()
         self.assertEqual(self.app.files, [])
@@ -461,7 +464,10 @@ class GuiTests(unittest.TestCase):
         ctypes.memmove(address, payload, len(payload))
         kernel.GlobalUnlock(handle)
         user.SendMessageW(user.GetAncestor(self.root.winfo_id(), 2), 0x0233, handle, 0)
-        self.root.update()
+        deadline = time.monotonic() + 2
+        while not received and time.monotonic() < deadline:
+            self.root.update()
+            time.sleep(0.01)
         self.assertEqual(received, paths)
         remove()
         self.doCleanups()
