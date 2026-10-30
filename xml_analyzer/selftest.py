@@ -73,7 +73,20 @@ def self_test(screenshot_dir=None):
             a, b = base / "日本語 A.xml", base / "日本語 B.xml"
             a.write_text('<r><n id="001"><v>りんご</v></n><n id="002"><v>=1+1</v></n></r>', encoding="utf-8")
             b.write_text('<r><n id="001"><v>みかん</v></n><n id="002"><v>=1+1</v></n></r>', encoding="utf-8")
-            app.import_files([str(a), str(b)])
+            if sys.platform == 'win32':
+                root.deiconify()
+                root.update_idletasks()
+                drop_deadline = time.monotonic() + 30
+                def check_drop():
+                    if (not app.task and len(app.files) == 2) or time.monotonic() > drop_deadline:
+                        root.quit()
+                    else:
+                        root.after(20, check_drop)
+                root.after(0, lambda: post_windows_drop(root, [a, b]))
+                root.after(20, check_drop)
+                root.mainloop()
+            else:
+                app.import_files([str(a), str(b)])
             deadline = time.monotonic() + 30
             while app.task:
                 root.update()
@@ -193,6 +206,8 @@ def self_test(screenshot_dir=None):
                     "ml_records": 4, "ml_features": 2, "ml_sheets": 4, "minimum_window": "640x480",
                     "table_elements": 10, "table_values": 14, "table_wide_rows": 4, "table_wide_columns": 2, "table_long_rows": 8, "table_header_groups": 4, "table_header_values": 4,
                     "gui": "Tk application, background import, tree and canvas", "network": "blocked", "screenshots": screenshots}
+            info['native_drop_files'] = 2 if sys.platform == 'win32' else 0
+            info['native_drop_dispatch'] = 'PostMessageW + Tk mainloop' if sys.platform == 'win32' else 'not applicable'
             app.finish_close()
             app, root = None, None
             return info
